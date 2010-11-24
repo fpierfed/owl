@@ -1,0 +1,73 @@
+Eunomia
+"Governance according to good laws"
+
+Eunomia is a pipeline/workflow execution framework designed to be simple and 
+lightweight. Its intended mode of operation is the repeated execution of fairly 
+static workflows. This is the mode of operation of data centers and astronomical
+observatories, more than individual researchers.
+
+
+Requirements
+Eunomia requires a recent version of Python (it has been tested with Python 2.5,
+2.6 and 2.7. Compatibility with Python 3.x has not been tested yet). You can 
+download Python from http://www.python.org
+
+In addition to Python, Eunomia relies on a small number of Python packages:
+ - elixir (http://elixir.ematia.de/trac/wiki) used as ORM
+ - sqlalchemy (http://www.sqlalchemy.org/) used as ORM
+ - jinja2 (http://jinja.pocoo.org/) used for templating
+ - drmaa (http://code.google.com/p/drmaa-python/) used for Condor/SGE
+
+These Python modules can be easily installed using setuptools 
+(http://pypi.python.org/pypi/setuptools) and its easy_install command.
+
+If one chooses to use Condor as GRID middleware, care should be taken to ensure
+the presence of libdrmaa.[so|dylib] which is missing from both the static 
+distribution and most RPMs. In that case, simply download the corresponding 
+dynamic distribution from the Condor home page (http://www.cs.wisc.edu/condor/)
+and manually copy libdrmaa to the appropriate system directory.
+
+
+Operations
+The main concepts in Eunomia are that of a workflow and of a workflow template.
+A workflow is simply a sequence of steps and requirements between steps. An 
+example of a workflow could be the following:
+    A - Get into your car
+    B - Start the car
+    C - Drive to work
+    D - Listen to the radio
+    E - Arrive at work, turn the car off
+    F - Go to he office
+There is clearly an implied sequence in this familiar workflow. There are also 
+implied requirements between the steps. At the same time, it is worth noting 
+that some steps can be executed in parallel (namely C and D). We could 
+graphically present the workflow as a directed acyclic graph (DAG):
+
+                                    A
+                                    |
+                                    B
+                                   / \
+                                  C   D
+                                   \ /
+                                    E
+                                    |
+                                    F
+
+The concept of workflows as DAGs is very powerful, especially when one realizes
+that each step in the workflow (i.e. each node in the DAG) could just as easily 
+be a workflow (i.e. a DAG) itself.
+
+Workflows are a central concept in (among others) astronomical data processing
+where a workflow could be a data reduction pipeline or, just as easily, a 
+series of pipelines organized according to some rules. An example would be a
+data reduction pipeline executed before a calibration pipeline followed by 
+image registration and stacking.
+
+Workflow templates are a way to describe a workflow and its nodes by using a
+standard templating language (jinja2). This allows for workflows and their
+nodes to be described irrespective of runtime environment considerations such as
+the location and names of the data files to process or version and location of
+the code to use in the execution of the workflow.
+
+Eunomia comes with a sample template and a script (process_dataset.py) to 
+illustrate a possible pseudo-science workflow.
