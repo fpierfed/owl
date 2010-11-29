@@ -32,7 +32,9 @@
 # 
 import config
 import blackboard
+import dag
 import job
 import workflow
+
 import plugins
 

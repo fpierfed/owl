@@ -33,112 +33,14 @@ This is a bit of a hack... err... proof of concept, I mean ;-)
 """
 import os
 
-import jinja2
-
+from eunomia import dag
 from eunomia import job
 
 
 
 
 
-def _extract_num_instances(ad):
-    for line in ad.split('\n'):
-        if(not line.startswith('Queue')):
-            continue
-        
-        tokens = line.strip().split()
-        if(len(tokens) == 2):
-            return(int(tokens[1]))
-        return(1)
-    raise(Exception('Unable to parse job ClassAd:\n %s' % (ad)))
-
-
-def _extract_inouts(arg_string):
-    args = arg_string.strip().split()
-    input = ''
-    output = ''
-    
-    nargs = len(args)
-    for i in range(nargs):
-        if(args[i] == '-i' and i < nargs):
-            input = args[i+1]
-        elif(args[i] == '-o' and i < nargs):
-            output = args[i+1]
-    return(input, output)
-    
-
-
-def _parse(dag, dir):
-    # A DAG syntax is pretty simple
-    # JOB JOBNAME JOBSCRIPT
-    # PARENT JOBNAME CHILD JOBNAME
-    # We do not support DATA jobs quite yet.
-    dag = os.path.join(dir, dag)
-    lines = [l.strip() for l in dag.split('\n') if l.strip()]
-    
-    # Nodes.
-    nodes = {}                                                  # {name, Node}
-    for line in lines:
-        if(not line.startswith('JOB')):
-            continue
-        
-        typ, name, script = line.split()
-        nodes[name] = Node(name=name, 
-                           script=os.path.join(dir, script),
-                           children=[])
-    
-    # Relations.
-    for line in lines:
-        if(not line.startswith('PARENT')):
-            continue
-        
-        # parent, name, child, child1 child2 child3...
-        tokens = line.split()
-        parent = nodes[tokens[1]]
-        parent.children = [nodes[n] for n in tokens[3:]]
-        for child in parent.children:
-            child.parents.append(parent)
-    return(nodes.values())
-
-
-def _escape(arg_string):
-    """
-    Shell escape arguments.
-    
-    http://stackoverflow.com/questions/35817/how-to-escape-os-system-calls-in-python
-    """
-    args = arg_string.strip().split()
-    return(' '.join(["'" + s.replace("'", "'\\''") + "'" for s in args]))
-
-
-
-class Node(object):
-    def __init__(self, name, script, children=[], parents=[]):
-        ad = open(script).read()
-        n = _extract_num_instances(ad)
-        
-        self.name = name
-        self.job = job.Job.newFromClassAd(ad)
-        self.job.Instances = n
-        self.children = children
-        self.parents = parents
-        return    
-
-
-
-class DAG(object):
-    @classmethod
-    def newFromDAG(cls, dag, dir):
-        """
-        Given a DAG text, parse it and create the corresponding DAG instance.
-        """
-        return(cls(nodes=_parse(dag, dir)))
-    
-    def __init__(self, nodes):
-        self.nodes = nodes
-        return
-    
-    
+class DAG(dag.DAG):
     def to_makefile(self):
         header = '\n'
         header += '# \n'
@@ -158,7 +60,7 @@ class DAG(object):
         all_outputs = ''
         for node in self.nodes:
             # Determine inputs and outputs
-            input, output = _extract_inouts(node.job.Arguments)
+            input, output = dag._extract_inouts(node.job.Arguments)
             if(not node.children):
                 last = output
             
@@ -181,7 +83,7 @@ class DAG(object):
                 
                 makefile += job_output + ': ' + job_input + '\n'
                 makefile += '\t%s %s\n\n' % (node.job.Executable, 
-                                             _escape(job_args))
+                                             dag._escape(job_args))
                 all_outputs += job_output + ' '
         
         # Now write the all rule.

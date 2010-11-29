@@ -28,4 +28,4 @@
 # DAMAGE.
 import condor
 import makefile
-
+import xgrid
