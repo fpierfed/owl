@@ -81,19 +81,27 @@ def _parse(dag, dir):
         typ, name, script = line.split()
         nodes[name] = Node(name=name, 
                            script=os.path.join(dir, script),
-                           children=[])
+                           children=[],
+                           parents=[])
     
     # Relations.
     for line in lines:
         if(not line.startswith('PARENT')):
             continue
         
-        # parent, name, child, child1 child2 child3...
+        # PARENT, <node name>, CHILD, <child1> <child2> <child3>...
+        #   0          1         2       3:
         tokens = line.split()
+        
         parent = nodes[tokens[1]]
-        parent.children = [nodes[n] for n in tokens[3:]]
-        for child in parent.children:
+        children = [nodes[n] for n in tokens[3:]]
+        
+        # print('%s is parent of %s' % (parent.name, str([c.name for c in children])))
+        parent.children = children
+        for child in children:
+            # print('%s is child of %s' % (child.name, parent.name))
             child.parents.append(parent)
+            # print('%s parents are %s' % (child.name, str([p.name for p in child.parents])))
     return(nodes.values())
 
 
