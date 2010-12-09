@@ -79,8 +79,8 @@ def _parse(classAdText):
             continue
         
         # Handle the Queue command, which does not have an = sign.
-        if(line.lower().split()[0] == 'queue'):
-            # FIXME: Do handle this.
+        if(line.lower().startswith('queue')):
+            res['Instances'] = _extract_num_instances(line)
             continue
         
         # Handle simple, full line comments.
@@ -98,7 +98,20 @@ def _parse(classAdText):
             raise(NotImplementedError('ClassAd arrays are not supported.'))
         res[key] = val
     return(res)
-        
+
+
+def _extract_num_instances(line):
+    """
+    Parse a Queue command and return the number of instances of the given Job to
+    start on the grid. The default is 1. This assumes that the line being passed
+    as input is indeed a Queue command. We also assume that the line has already
+    been strip()-ed.
+    """
+    tokens = line.split()
+    if(len(tokens) == 2):
+        return(int(tokens[1]))
+    return(1)
+
 
 
 class Job(object):

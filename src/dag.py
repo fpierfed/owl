@@ -37,18 +37,6 @@ import job
 
 
 
-def _extract_num_instances(ad):
-    for line in ad.split('\n'):
-        if(not line.startswith('Queue')):
-            continue
-        
-        tokens = line.strip().split()
-        if(len(tokens) == 2):
-            return(int(tokens[1]))
-        return(1)
-    raise(Exception('Unable to parse job ClassAd:\n %s' % (ad)))
-
-
 def _extract_inouts(arg_string):
     args = arg_string.strip().split()
     input = ''
@@ -119,11 +107,9 @@ def _escape(arg_string):
 class Node(object):
     def __init__(self, name, script, children=[], parents=[]):
         ad = open(script).read()
-        n = _extract_num_instances(ad)
         
         self.name = name
         self.job = job.Job.newFromClassAd(ad)
-        self.job.Instances = n
         self.children = children
         self.parents = parents
         return    
