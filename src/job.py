@@ -119,9 +119,12 @@ class Job(object):
     def newFromClassAd(cls, ad):
         """
         Given a Condor ClassAd text, parse it and create the corresponding Job
-        instance.
+        instance. Save the raw ClassAd as _rawClassAd instance variable for 
+        future reuse.
         """
-        return(cls(**_parse(ad)))
+        j = cls(**_parse(ad))
+        j._rawClassAd = ad
+        return(j)
     
     def __init__(self, **kw):
         map(lambda (k, v): setattr(self, k, v), kw.items())
@@ -131,31 +134,12 @@ class Job(object):
         if('JobState' not in kw.keys() or not kw['JobState']):
             self.JobState = unicode('Starting')
         return
-    
-    def updateFromClassAd(self, ad):
-        """
-        Update the Job instance variables from the given raw ClassAd. Return the
-        instance variable names that were updated, their old value and the new
-        value in the form
-            {var: old}
-        if an instance variable was added, then we only have
-            {var: None}
-        which clearly introduces a possible degeneracy in the case the variable 
-        existed, was set to None and then updated to a new value vs the case
-        where the variable did not exist. Also we get the same behaviour in the 
-        case where the variable did not exists and is now set to None.
-        """
-        updated = {}
-        
-        newClassAd = _parse(ad)
-        for key, val in newClassAd.items():
-            if(getattr(self, key, None) != val or not hasattr(self, key)):
-                updated[key] = getattr(self, key)
-                setattr(self, key, val)
-        return(updated)
-    
-        
-        
+
+
+
+
+
+
 
 
 
