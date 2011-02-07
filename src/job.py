@@ -78,7 +78,7 @@ def _parse(classAdText):
         if(not(line)):
             continue
         
-        # Handle the Queue command, which does not have an = sign.
+        # Handle the Queue command, which does not have an = sign. 
         if(line.lower().startswith('queue')):
             res['Instances'] = _extract_num_instances(line)
             continue
@@ -92,7 +92,10 @@ def _parse(classAdText):
         except:
             raise(Exception('Cannot parse line "%s"' % (line)))
         
+        # Remember to strip any leading + sign from the key name.
         key = rawKey.strip()
+        if(key[0] == '+'):
+            key = key[1:]
         val = _parseClassAdValue(rawVal.strip())
         if(res.has_key(key)):
             raise(NotImplementedError('ClassAd arrays are not supported.'))

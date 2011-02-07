@@ -66,7 +66,7 @@ Variables used by the job/workflow templates are
 
 Different types of middleware can be used to execute the workflow on the user 
 data. The middleware is specified using the -g option and defaults to 'condor'.
-Supported middleware is 'condor' or 'makefile'.
+Supported middleware is 'condor', 'makefile' or 'xgrid'.
 """
 import os
 import time

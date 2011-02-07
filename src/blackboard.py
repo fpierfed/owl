@@ -144,6 +144,7 @@ column:
     OrigIwd = "/home/fpierfed/bcw/condor/bcw/dag"
     ExitCode = 0
     Dataset = "raw-000002.fits"
+    Instances = 4
 """
 import datetime
 import elixir
@@ -289,6 +290,7 @@ class Blackboard(elixir.Entity):
     JobDuration = elixir.Field(elixir.Float)
     ExitCode = elixir.Field(elixir.Integer)
     Dataset = elixir.Field(elixir.Unicode(255))
+    Instances = elixir.Field(elixir.Integer)
 
     def __repr__(self):
         return('Blackboard instance.')
@@ -355,10 +357,16 @@ def updateEntry(job):
     # Fix timestamps.
     _convertTimeStamps(job)
     
-    # Update the old entry.
+    # Update the old entry. Remember that the information on the number of job
+    # instances is only available to the prepare_job hook. This means that we
+    # should not update entry.Instances.
     entry = Blackboard.query.filter_by(GlobalJobId=job.GlobalJobId).one()
     modified = 0
     for attr in job.__dict__.keys():
+        if(att == "Instances"):
+            # Never update Instances.
+            continue
+        
         if(not hasattr(entry, attr)):
             # Not in our data model: move on.
             continue
