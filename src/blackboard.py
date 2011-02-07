@@ -363,7 +363,7 @@ def updateEntry(job):
     entry = Blackboard.query.filter_by(GlobalJobId=job.GlobalJobId).one()
     modified = 0
     for attr in job.__dict__.keys():
-        if(att == "Instances"):
+        if(attr == "Instances"):
             # Never update Instances.
             continue
         
