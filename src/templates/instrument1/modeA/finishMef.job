@@ -47,6 +47,7 @@ When_to_Transfer_Output = ON_EXIT
 transfer_input_files    = {% for i in range(num_ccds) -%}{{ comma() }}{{ dataset }}_calib_{{ i }}.fits{% endfor %}
 
 +HookKeyword            = "FOO"
++Instances              = 1
 
 Notification            = Never
 Queue

@@ -45,6 +45,7 @@ When_to_Transfer_Output = ON_EXIT
 transfer_input_files    = {{ dataset }}_$(Process).fits
 
 +HookKeyword            = "FOO"
++Instances              = {{ num_ccds }}
 
 Notification            = Never
 Queue {{ num_ccds }}

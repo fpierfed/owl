@@ -44,6 +44,7 @@ Should_Transfer_Files   = IF_NEEDED
 When_to_Transfer_Output = ON_EXIT
 
 +HookKeyword            = "FOO"
++Instances              = 1
 
 Notification            = Never
 Queue
