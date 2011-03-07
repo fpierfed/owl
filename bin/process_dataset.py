@@ -87,6 +87,7 @@ OPTIONS
     -i, --instrument=INS                instrument name
     -i, --mode=MODE                     instrument mode
     -g, --grid-middleware=MIDDLEWARE    middleware name
+    -e,--env=KEY=VAL(,KEY=VAL)*
     
 '''
 TEMPLATE_ROOT = config.TEMPLATE_ROOT
@@ -96,7 +97,7 @@ WORK_ROOT = config.WORK_ROOT
 
 
 
-def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, 
+def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
             workRoot=WORK_ROOT, middleware='condor', verbose=False):
     """
     Given a list of datasets to process and a directory of templates, for each
@@ -119,6 +120,36 @@ def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT,
                       flavour=middleware)
     return(0)
     
+
+
+def _parseExtraEnvironmentInfo(rawUSerEnvInfo):
+    """
+    Given a string of the form
+    
+        KEY=VAL(,KEY=VAL)*
+    
+    where KEYs are environment variable names and VARs their respective values,
+    parse the input string and return a dictionary of the form
+    
+        {KEY: VAL, }
+    
+    Only simple parsing is supported. This means, among other things, that VALs
+    are assumed to be strings. No arrays, list, tuples are supported. The 
+    returned dictionary is assumed to be usable to agument the user environment.
+    """
+    def parseToken(token):
+        """
+        Parse a 
+            KEY=VAL
+        string, allowing for spaces on either side of the = sign. Return the
+        parsed (KEY, VAL) tuple.
+        """
+        if(not token or '=' not in token):
+            return(())
+        items = token.split('=', 1)
+        return((items[0].strip(), items[1].strip()))
+        
+    return(dict(map(parseToken, rawUSerEnvInfo.split(','))))
 
 
 
@@ -154,6 +185,11 @@ if(__name__ == '__main__'):
                       type='str',
                       default='condor',
                       help='grid/local middleware to use')
+    parser.add_option('-e', '--env',
+                      dest='env',
+                      type='str',
+                      default=None,
+                      help='any extra environment variable to use')
     # Verbose flag
     parser.add_option('-v',
                       action='store_true',
@@ -185,11 +221,15 @@ if(__name__ == '__main__'):
     if(not os.path.exists(templateDir)):
         parser.error('Please specify a valid instrument mode.')
     
+    # Now see if we have to do any environment variable parsing/setting up.
+    env = _parseExtraEnvironmentInfo(options.env)
+    
     # Run!
     sys.exit(process(datasets=args, 
                      repository=options.repository, 
                      templateRoot=templateDir, 
                      middleware=options.middleware,
+                     extraEnvironment=env,
                      verbose=options.verbose))
 
 

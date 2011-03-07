@@ -68,7 +68,7 @@ class Workflow(object):
     
     
     def execute(self, codeRoot, repository, dataset, workDir=None, 
-                flavour='condor'):
+                flavour='condor', extraEnvironment={}):
         # Determine the number of CCDs
         n = _getNumberOfCCDs(repository, dataset)
         
@@ -105,13 +105,18 @@ class Workflow(object):
         dagName = root + '_' + dataset + ext
         
         # Now submit the whole workflow via DRMAA.
-        return(self._submit(dagName, workDir, flavour))
+        return(self._submit(dagName, workDir, flavour, extraEnvironment))
     
     
-    def _submit(self, dagName, workDir, flavour='condor'):
+    def _submit(self, dagName, workDir, flavour='condor', extraEnvironment={}):
         """
         Simply delegate the work to the appropriate plugin.
         """
+		# If we are asked to (by specifying extraEnvironment) agument the user 
+		# environment.
+		if(extraEnvironment):
+			os.environ.update(extraEnvironment)
+		
         plugin = getattr(plugins, flavour)
         return(plugin.submit(dagName, workDir))
         
