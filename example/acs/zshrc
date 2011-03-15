@@ -45,7 +45,7 @@ export RAW=/hstdev/project/hla/data/raw/
 export LOG=/hstdev/project/hla/data/log/
 export HLA_DATA_PATHS=/hstdev/project/hla/data/:/hstops/project/hla/data/
 
-export DADS=/hstdev/project/dads/
+export DADS=/grp/hst/cdbs/
 export REF=${DADS}/acs-ref/
 export ARCHIVE_DATA=${DADS}/acs-raw/
 export mtab=${DADS}/mtab/

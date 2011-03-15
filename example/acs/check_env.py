@@ -8,8 +8,7 @@ USAGE = '''Usage: check_env.py [--create_dirs]
     Check that the environment is properly setup for HLA-style ACS processing.
     Optionally create the required directory structure.
 '''
-REQUIRED_VARS = ('ACS_CDBS',
-                 'ARCHIVE_DATA', 
+REQUIRED_VARS = ('ARCHIVE_DATA', 
                  'CAL', 
                  'CONTROL', 
                  'cracscomp', 
