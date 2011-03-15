@@ -8,7 +8,8 @@ USAGE = '''Usage: check_env.py [--create_dirs]
     Check that the environment is properly setup for HLA-style ACS processing.
     Optionally create the required directory structure.
 '''
-REQUIRED_VARS = ('ARCHIVE_DATA', 
+REQUIRED_VARS = ('ACS_CDBS',
+                 'ARCHIVE_DATA', 
                  'CAL', 
                  'CONTROL', 
                  'cracscomp', 
@@ -30,7 +31,7 @@ REQUIRED_VARS = ('ARCHIVE_DATA',
 
 
 
-def report(defined, undefined, missing_paths, existing_paths, created_dirs):
+def report(defined, undefined, existing_paths, missing_paths, created_dirs):
     """
     Compose a report of which environment variables were defined, undefined, 
     which paths existed and which ones did not. Also specify is the missing 
@@ -48,12 +49,14 @@ def report(defined, undefined, missing_paths, existing_paths, created_dirs):
             defd = 'True'
             exist = 'False'
             value = os.environ[var]
+            values = value.split(':')
         else:
             defd = 'False'
             creatd = 'N/A'
             exist = 'N/A'
             value = 'N/A'
-        if(var in existing_paths):
+            values = []
+        if(reduce(lambda x, y: x and y, [v in existing_paths for v in values])):
             exist = 'True'
         
         text += row % (var, defd, exist, creatd, value) + '\n'
@@ -105,7 +108,7 @@ def check_env(env_vars, create_dirs=False, verbose=False):
             continue
         
         # Now see if the path(s) in var exist.
-        paths = var.split(':')
+        paths = os.environ[var].split(':')
         there, not_there = check_paths(paths=paths, create_dirs=create_dirs)
         missing_paths += not_there
         existing_paths += there
@@ -113,8 +116,8 @@ def check_env(env_vars, create_dirs=False, verbose=False):
     # Print out a summary.
     print(report(defined, 
                  undefined, 
-                 missing_paths, 
                  existing_paths, 
+                 missing_paths, 
                  created_dirs=create_dirs))
     return(0)
 

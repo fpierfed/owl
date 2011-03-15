@@ -1,3 +1,6 @@
 Port of the HLA ACS-L2-DG pipeline to Condor. Put these scripts wherever your
 $code_root points to.
 
+As a FYI, the ACS reference files can be found (within ST-Net) on central
+store at /grp/hst/cdbs/jref
+
