@@ -46,16 +46,15 @@ export LOG=/hstdev/project/hla/data/log/
 export HLA_DATA_PATHS=/hstdev/project/hla/data/:/hstops/project/hla/data/
 
 export DADS=/grp/hst/cdbs/
-export REF=${DADS}/acs-ref/
-export ARCHIVE_DATA=${DADS}/acs-raw/
-export mtab=${DADS}/mtab/
+export REF=${DADS}acs-ref/
+export ARCHIVE_DATA=${DADS}acs-raw/
+export mtab=${DADS}mtab/
 export jref=${REF}
-export ACS_CDBS=/grp/hst/cdbs/jref/
-export crotacomp=${DADS}/comp/ota/
-export cracscomp=${DADS}/comp/acs/
+export crotacomp=${DADS}comp/ota/
+export cracscomp=${DADS}comp/acs/
 
 export BASEWORK=/hstdev/project/hla/work/
-export CONTROL=${BASEWORK}/multidrizzle_processing/control/
+export CONTROL=${BASEWORK}multidrizzle_processing/control/
 
 # Software paths.
 export IRAF=/iraf/iraf/
@@ -63,6 +62,8 @@ export SOFTWARE=/hstdev/project/hla/bin/
 export HLAPipelineBin=${SOFTWARE}
 export FITSGeneration=${SOFTWARE}
 
-export hostmachine=${HOST}
+export hostmachine=`hostname -s`
 
-
+# Needed for photometric zero point computation.
+export crotacomp=${DADS}comp/ota/
+export cracscomp=${DADS}comp/acs/
