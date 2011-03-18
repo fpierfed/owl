@@ -28,41 +28,16 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 """
-Given a workflow template and a dataset name, create the DAG for the processing 
-of the dataset and submit it to the grid.
-
-Workflow templates are arranged by instrument and observing mode:
-    templates/
-        instrument1/
-            modeA/
-                instrument1_modeA.dag
-                dagNodeX.job
-                dagNodeY.job
-                dagNodeZ.job
-                ...
-            modeB/
-                instrument1_modeA.dag
-                dagNodeI.job
-                dagNodeJ.job
-                ...
-        instrument2/
-            modeC
-                instrument2_modeC.dag
-                dagNodeX1.job
-                dagNodeY1.job
-                dagNodeZ1.job
-                dagNodeW1.job
-                ...
-            ...
-        ...
-Workflow templates use the Jinja2 Python template framework.
+Given the name of an ACS visit, create the DAG for the processing of that visit
+and submit it to the grid.
 
 Variables used by the job/workflow templates are
 
     code_root           path to the root of the pipeline code
     repository          path to the raw data repository
-    dataset             root name of the dataset to process
-    num_ccds            number of CCDs to process
+    dataset             name of the visit to process (6 characters) for multidr
+                        and the name of the exposure in the visit for calacs
+    num_exposures       number of exposures in the visit (internal)
 
 Different types of middleware can be used to execute the workflow on the user 
 data. The middleware is specified using the -g option and defaults to 'condor'.
@@ -80,12 +55,10 @@ from eunomia import workflow
 
 # Constants
 USAGE = '''\
-process_dataset.py OPTIONS <dataset root>
+process_dataset.py OPTIONS <visit name>
 
 OPTIONS
     -r, --repository=PATH               path to the raw data respository
-    -i, --instrument=INS                instrument name
-    -i, --mode=MODE                     instrument mode
     -g, --grid-middleware=MIDDLEWARE    middleware name
     -e,--env=KEY=VAL(,KEY=VAL)*
     
@@ -93,6 +66,9 @@ OPTIONS
 TEMPLATE_ROOT = config.TEMPLATE_ROOT
 CODE_ROOT = config.PIPELINE_ROOT
 WORK_ROOT = config.WORK_ROOT
+INSTRUMENT = 'hla'
+MODE = 'acs-l2-dg-simple'
+
 
 
 
@@ -100,10 +76,10 @@ WORK_ROOT = config.WORK_ROOT
 def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
             workRoot=WORK_ROOT, middleware='condor', verbose=False):
     """
-    Given a list of datasets to process and a directory of templates, for each
-    dataset, determine the number of CCDs, render the full workflow template set
-    and submit the instantiated workflow to the grid. Return immediately upon
-    workflow submission.
+    Given a list of datasets (i.e. visits) to process and a directory of 
+    templates, for each visit/dataset, determine the number of exposures, render
+    the full workflow template set and submit the instantiated workflow to the 
+    grid. Return immediately upon workflow submission.
     """
     # Create a simple work directory path: workRoot/<user>_<timestamp>
     dirName = '%s_%f' % (os.environ['USER'], time.time())
@@ -111,7 +87,7 @@ def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
     
     for dataset in datasets:
         # Create a instrument/mode Workflow instance (dataset independent)...
-        wflow = workflow.BcwWorkflow(templateRoot=templateRoot)
+        wflow = workflow.AcsWorkflow(templateRoot=templateRoot)
         # ... and submit it to the grid (for this particular piece of data).
         wflow.execute(codeRoot=codeRoot, 
                       repository=repository, 
@@ -173,16 +149,6 @@ if(__name__ == '__main__'):
                       type='str',
                       default=None,
                       help='path to the raw data respository')
-    parser.add_option('-i', '--instrument',
-                      dest='instrument',
-                      type='str',
-                      default=None,
-                      help='instrument name')
-    parser.add_option('-m', '--mode',
-                      dest='mode',
-                      type='str',
-                      default=None,
-                      help='instrument mode')
     parser.add_option('-g', '--grid-middleware',
                       dest='middleware',
                       type='str',
@@ -205,24 +171,22 @@ if(__name__ == '__main__'):
     # Sanity check: all the opions (apart from verbose) are required.
     if(not options.repository):
         parser.error('Please specify the repository path.')
-    if(not options.instrument):
-        parser.error('Please specify the instrument name.')
-    if(not options.mode):
-        parser.error('Please specify the instrument mode.')
     if(not args):
-        parser.error('Please specify the dataset name(s).')
+        parser.error('Please specify the visit name(s).')
     
     # Make sure that that suff actually exists.
     if(not os.path.exists(options.repository)):
         parser.error('Please specify a valid repository path.')
     
-    instrumentPath = os.path.join(TEMPLATE_ROOT, options.instrument)
+    instrumentPath = os.path.join(TEMPLATE_ROOT, INSTRUMENT)
     if(not os.path.exists(instrumentPath)):
-        parser.error('Please specify a valid instrument name.')
+        print('Unable to find templates for %s' % (INSTRUMENT))
+        sys.exit(1)
     
-    templateDir = os.path.join(instrumentPath, options.mode)
+    templateDir = os.path.join(instrumentPath, MODE)
     if(not os.path.exists(templateDir)):
-        parser.error('Please specify a valid instrument mode.')
+        print('Unable to find templates for %s/%s' % (INSTRUMENT, MODE))
+        sys.exit(2)
     
     # Now see if we have to do any environment variable parsing/setting up.
     env = _parseExtraEnvironmentInfo(options.env)

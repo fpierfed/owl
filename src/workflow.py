@@ -48,6 +48,18 @@ def _getNumberOfCCDs(repository, dataset):
     return(len(lines))
 
 
+def _getNumberOfExposures(repository, dataset):
+    """
+    Return the number of _raw.fits files in the given ACS dataset/visit.
+    """
+    exposures = [f for f in os.listdir(repository) if f.startswith(dataset) and
+                                                      f.endswith('_raw.fits')]
+    return(len(exposures))
+
+
+
+
+
 
 class Workflow(object):
     def __init__(self, templateRoot):
@@ -69,14 +81,16 @@ class Workflow(object):
     
     def execute(self, codeRoot, repository, dataset, workDir=None, 
                 flavour='condor', extraEnvironment={}):
-        # Determine the number of CCDs
-        n = _getNumberOfCCDs(repository, dataset)
+        # Get any extra keyword we might need for our templates.
+        extraKw = self.getExtraKeywords(codeRoot, repository, dataset, workDir, 
+                                         flavour, extraEnvironment)
         
         # Create the variable dictionary that the templates are going to need.
         kw = {'code_root': codeRoot,
               'repository': repository,
-              'dataset': dataset,
-              'num_ccds': n}
+              'dataset': dataset}
+        # Extend/override the content of kw with that of extraKw.
+        kw.update(extraKw)
         
         # Create a temporary directory unless one was specified.
         if(not workDir):
@@ -108,44 +122,52 @@ class Workflow(object):
         return(self._submit(dagName, workDir, flavour, extraEnvironment))
     
     
+    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
+                         extraEnvironment):
+        return({})
+    
+    
     def _submit(self, dagName, workDir, flavour='condor', extraEnvironment={}):
         """
         Simply delegate the work to the appropriate plugin.
         """
-		# If we are asked to (by specifying extraEnvironment) agument the user 
-		# environment.
-		if(extraEnvironment):
-			os.environ.update(extraEnvironment)
-		
+        # If we are asked to (by specifying extraEnvironment) agument the user 
+        # environment.
+        if(extraEnvironment):
+            os.environ.update(extraEnvironment)
+        
         plugin = getattr(plugins, flavour)
         return(plugin.submit(dagName, workDir))
-        
-#     def _submit(self, dagName, workDir, flavour='condor'):
-#         
-#         # Start the DRMAA session.
-#         session = drmaa.Session()
-#         session.initialize()
-#         
-#         # Create the DRMAA ClassAd.
-#         plugin = getattr(plugins, flavour)
-#         ad = plugin.createJobTemplate(session, dagName, workDir)
-#         
-#         # Submit the job.
-#         jobId = session.runJob(ad)
-#         
-#         # Cleanup.
-#         session.deleteJobTemplate(ad)
-#         
-#         # Close the DRMAA session.
-#         session.exit()
-# 
-#         return(0)
-
-        
-        
-        
 
 
+
+class BcwWorkflow(Workflow):
+    """
+    Simple BCW workflow.
+    """
+    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
+                         extraEnvironment):
+        return({'num_ccds': _getNumberOfCCDs(repository, dataset)})
+
+
+
+class BcwWorkflow(Workflow):
+    """
+    Simple BCW workflow.
+    """
+    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
+                         extraEnvironment):
+        return({'num_ccds': _getNumberOfCCDs(repository, dataset)})
+
+
+
+class AcsWorkflow(Workflow):
+    """
+    HLA/ACS workflow.
+    """
+    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
+                         extraEnvironment):
+        return({'num_exposures': _getNumberOfExposures(repository, dataset)})
 
 
 
