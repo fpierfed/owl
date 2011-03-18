@@ -143,7 +143,11 @@ def run(visit, process_id):
 
       hostmachine = os.getenv('hostmachine')
 
-
+      
+      # Since the various instances are started at the same time, stagger them
+      # to avoid clobbering. This of course needs to be thought better.
+      time.sleep(float(process_id) / 2.)
+      
       print('/bin/cd '+RAW)
       os.chdir(RAW)
       rawfiles = glob.glob(visit+'*_raw.fits*')
@@ -151,9 +155,10 @@ def run(visit, process_id):
       rawfiles.sort()                                       # <-- important!!!!!
 
       # Set up a working directory for this visit:
-      #
-      os.system('/bin/rm -rf '+ os.path.join(WORK, visit+'_calacs'))
-      os.system('mkdir ' + os.path.join(WORK, visit+'_calacs'))
+      # Do the cleanup if and only of we are process_id=0
+      if(process_id == 0):
+        os.system('/bin/rm -rf '+ os.path.join(WORK, visit+'_calacs'))
+        os.system('mkdir ' + os.path.join(WORK, visit+'_calacs'))
       iraf.chdir(os.path.join(WORK, visit+'_calacs'))
       os.chdir(os.path.join(WORK, visit+'_calacs'))
       
