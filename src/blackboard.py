@@ -272,7 +272,7 @@ class Blackboard(elixir.Entity):
     DAGParentNodeNames = elixir.Field(elixir.Unicode(255))
     DAGManJobId = elixir.Field(elixir.Integer)
     HookKeyword = elixir.Field(elixir.Unicode(255))
-    Environment = elixir.Field(elixir.Unicode(255))
+    Environment = elixir.Field(elixir.UnicodeText())
     Arguments = elixir.Field(elixir.Unicode(255))
     MyAddress = elixir.Field(elixir.Unicode(255))
     LastJobLeaseRenewal = elixir.Field(elixir.DateTime)
