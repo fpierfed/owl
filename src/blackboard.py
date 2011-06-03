@@ -157,14 +157,35 @@ import config
 
 
 # Define the database connection.
-# FIXME: Get database connection info from a config file.
-elixir.metadata.bind = "%s://%s:%s@%s:%d/%s" \
-                       % (config.DATABASE_FLAVOUR,
-                          config.DATABASE_USER,
-                          config.DATABASE_PASSWORD,
-                          config.DATABASE_HOST,
-                          config.DATABASE_PORT,
-                          config.DATABASE_DB)
+has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
+port_info = ''
+connection_str = '%(flovour)s://%(user)s:%(passwd)s@%(host)s'
+
+# We need to handle a few special cases.
+# 1. Database separator when using MSSQL
+if(has_mssql):
+    db_info = '\\' + config.DATABASE_DB
+else:
+    db_info = '/' + config.DATABASE_DB
+
+# 2. Yes/No port onformation and yes/no MSSQL.
+if(config.DATABASE_PORT and config.DATABASE_PORT != -1 and not has_mssql):
+    port_info += ':' + str(config.DATABASE_PORT)
+elif(config.DATABASE_PORT and config.DATABASE_PORT != -1):
+    port_info += '?port=' + str(config.DATABASE_PORT)
+
+# 3. MSSSQL wants a different connection string if a port is specified. Bug?
+if(has_mssql):
+    connection_str += '%(db_info)s%(port_info)s'
+else:
+    connection_str += '%(port_info)s%(db_info)s'
+
+elixir.metadata.bind = connection_str % {'flavour': config.DATABASE_FLAVOUR,
+                                         'user': config.DATABASE_USER,
+                                         'passwd': config.DATABASE_PASSWORD,
+                                         'host': config.DATABASE_HOST,
+                                         'port_info': port_info,
+                                         'db_info': db_info}
 elixir.metadata.bind.echo = False
 
 

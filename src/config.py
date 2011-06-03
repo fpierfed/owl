@@ -46,7 +46,7 @@ except:
                           'etc', 'eunomiarc'))
 for name in names:
     if(os.path.exists(name)):
-        config = ConfigParser.RawConfigParser(defaults={'port': 5432})
+        config = ConfigParser.RawConfigParser(defaults={'port': -1})
         config.read(name)
         break
 
