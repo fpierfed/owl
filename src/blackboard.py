@@ -159,7 +159,7 @@ import config
 # Define the database connection.
 has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
 port_info = ''
-connection_str = '%(flovour)s://%(user)s:%(passwd)s@%(host)s'
+connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
 
 # We need to handle a few special cases.
 # 1. Database separator when using MSSQL
