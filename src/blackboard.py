@@ -147,6 +147,7 @@ column:
     Instances = 4
 """
 import datetime
+import urllib
 import elixir
 from sqlalchemy import desc
 
@@ -162,11 +163,11 @@ port_info = ''
 connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
 
 # We need to handle a few special cases.
-# 1. Database separator when using MSSQL
-if(has_mssql):
-    db_info = '\\' + config.DATABASE_DB
-else:
-    db_info = '/' + config.DATABASE_DB
+# 0. The password miught contain characters that need to be escaped.
+pwd = urllib.quote_plus(config.DATABASE_PASSWORD)
+
+# 1. Database separator
+db_info = '/' + config.DATABASE_DB
 
 # 2. Yes/No port onformation and yes/no MSSQL.
 if(config.DATABASE_PORT and config.DATABASE_PORT != -1 and not has_mssql):
@@ -182,7 +183,7 @@ else:
 
 elixir.metadata.bind = connection_str % {'flavour': config.DATABASE_FLAVOUR,
                                          'user': config.DATABASE_USER,
-                                         'passwd': config.DATABASE_PASSWORD,
+                                         'passwd': pwd,
                                          'host': config.DATABASE_HOST,
                                          'port_info': port_info,
                                          'db_info': db_info}
