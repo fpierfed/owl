@@ -82,7 +82,7 @@ def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
     grid. Return immediately upon workflow submission.
     """
     # Create a simple work directory path: workRoot/<user>_<timestamp>
-    dirName = '%s_%f' % (os.environ['USER'], time.time())
+    dirName = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), time.time())
     workDir = os.path.join(workRoot, dirName)
     
     for dataset in datasets:
