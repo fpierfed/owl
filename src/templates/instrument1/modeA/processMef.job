@@ -31,7 +31,7 @@
 # Process MEF template.
 # 
 Executable              = {{ code_root }}/processMef.py
-Arguments               = -i {{ repository }}/{{ dataset }}.fits \
+Arguments               = -i {{ dataset }}.fits \
                           -o {{ dataset }}_%(ccdId)s.fits
 Output                  = processMef_{{ dataset }}.out
 Error                   = processMef_{{ dataset }}.err
@@ -42,6 +42,7 @@ Log                     = {{ dataset }}.log
 
 Should_Transfer_Files   = IF_NEEDED
 When_to_Transfer_Output = ON_EXIT
+transfer_input_files    = {{ repository }}/{{ dataset }}.fits
 
 +HookKeyword            = "FOO"
 +Instances              = 1
