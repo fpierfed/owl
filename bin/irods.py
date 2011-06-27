@@ -42,7 +42,7 @@ iRODS URIs have to have the form
     irods://user.zone:passwrod@server:port/path/to/file/or/collection
 
 file URIs have to have the form
-    file:/path/to/file
+    [file:]/path/to/file
 """
 import os
 import subprocess
@@ -137,7 +137,7 @@ def get(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
         irods://user.zone:passwrod@server:port/path/to/file/or/collection
     
     file URIs have to have the form
-        file:/path/to/file/or/directory
+        [file:]/path/to/file/or/directory
         
     `src` has to be an iRODS URI pointing to a file and `dst` has to be a file 
     URI pointing to a file or directory.
@@ -172,7 +172,7 @@ def put(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
         irods://user.zone:passwrod@server:port/path/to/file/or/collection
     
     file URIs have to have the form
-        file:/path/to/file
+        [file:]/path/to/file
     
     `src` has to be a file URI pointing to a file and `dst` has to be an iRODS 
     URI pointing to a collection/directory.
@@ -241,9 +241,9 @@ if(__name__ == '__main__'):
     #   2. dst_uri is an irods directory/collection URI and src_uri is a file 
     #      URI.
     # All other cases are not supported.
-    if(src_uri.startswith('irods://') and dst_uri.startswith('file:')):
+    if(src_uri.startswith('irods://') and not dst_uri.startswith('irods://')):
         sys.exit(get(src_uri, dst_uri))
-    elif(src_uri.startswith('file:') and dst_uri.startswith('irods://')):
+    elif(not src_uri.startswith('irods://') and dst_uri.startswith('irods://')):
         sys.exit(put(src_uri, dst_uri))
     else:
         raise(NotImplementedError('Only iRODS<->file transfers are supported.'))
