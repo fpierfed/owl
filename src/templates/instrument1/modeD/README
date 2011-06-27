@@ -1,0 +1,3 @@
+This is the same as modeA but uses iRODS to transfer files.
+Differently than modeC, this uses a Condor filetrasfer plugin
+to interface with iRODS.
