@@ -151,13 +151,32 @@ class BcwWorkflow(Workflow):
 
 
 
-class BcwWorkflow(Workflow):
+class BcwIrodsWorkflow(Workflow):
     """
-    Simple BCW workflow.
+    Simple BCW+iRODS workflow.
     """
     def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
                          extraEnvironment):
-        return({'num_ccds': _getNumberOfCCDs(repository, dataset)})
+        # Root iRODS collection.
+        root = '/fooZone/home/foo'
+        
+        # Remember to remove root and any leading slash from repository.
+        if(repository.startswith(root)):
+            repository.replace(root, '', 1)
+        if(repository.startswith('/')):
+            repository = repository[1:]
+        
+        # FIXME: Handle iRODS user auth better!!!
+        # FIXME: Derice the number of CCDs dynamically.
+        return({'num_ccds': 4,
+                'work_dir': workDir,
+                'user': 'foo',
+                'zone': 'fooZone',
+                'password': 'condor',
+                'server': 'jwdmsdevvm2.stsci.edu',
+                'port': 1247,
+                'root': root,
+                'repository': repository})
 
 
 
