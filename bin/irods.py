@@ -155,9 +155,11 @@ def get(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
         cmd.insert(1, '-f')
     p = subprocess.Popen(cmd, shell=False, env=env)
     err = p.wait()
+    
+    # Cleanup and quit.
+    if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
+        os.remove(env['irodsAuthFileName'])
     if(err):
-        if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
-            os.remove(env['irodsAuthFileName'])
         print('Error: iget returned %d' % (err))
     return(err)
 
@@ -190,9 +192,11 @@ def put(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
         cmd.insert(1, '-f')
     p = subprocess.Popen(cmd, shell=False, env=env)
     err = p.wait()
+    
+    # Cleanup and quit.
+    if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
+        os.remove(env['irodsAuthFileName'])
     if(err):
-        if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
-            os.remove(env['irodsAuthFileName'])
         print('Error: iput returned %d' % (err))
     return(err)
 
