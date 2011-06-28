@@ -157,7 +157,7 @@ def get(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
     err = p.wait()
     
     # Cleanup and quit.
-    if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
+    if(env.get('rm_irods_auth_file', 'False').lower() == 'true'):
         os.remove(env['irodsAuthFileName'])
     if(err):
         print('Error: iget returned %d' % (err))
@@ -194,7 +194,7 @@ def put(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
     err = p.wait()
     
     # Cleanup and quit.
-    if(os.environ.get('rm_irods_auth_file', 'False').lower() == 'true'):
+    if(env.get('rm_irods_auth_file', 'False').lower() == 'true'):
         os.remove(env['irodsAuthFileName'])
     if(err):
         print('Error: iput returned %d' % (err))
