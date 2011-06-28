@@ -146,6 +146,10 @@ def get(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
     (username, zone, password, host, port, src_path) = _parse_irods_uri(src)
     dst_path = _parse_file_uri(dst)
     
+    # There is a bug in iput/iget that leads to strange file names if src_path 
+    # has a double slash '//'...
+    src_path = src_path.replace('//', '/')
+    
     # Setup the environment for iRODS and call iinit.
     env = _set_irods_env(username, zone, password, host, port)
     
@@ -182,6 +186,10 @@ def put(src, dst, force=True, bin_dir=IRODS_BIN_DIR):
     # Parse src and dst.
     src_path = _parse_file_uri(src)
     (username, zone, password, host, port, dst_path) = _parse_irods_uri(dst)
+    
+    # There is a bug in iput/iget that leads to strange file names if dst_path 
+    # has a double slash '//'...
+    dst_path = dst_path.replace('//', '/')
     
     # Setup the environment for iRODS and call iinit.
     env = _set_irods_env(username, zone, password, host, port)
