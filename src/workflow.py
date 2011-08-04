@@ -166,9 +166,10 @@ class BcwIrodsWorkflow(Workflow):
         if(repository.startswith('/')):
             repository = repository[1:]
         
-        # FIXME: Handle iRODS user auth better!!!
-        # FIXME: Derice the number of CCDs dynamically.
-        return({'num_ccds': 4,
+        # Derive the number of CCDs.
+        n = _getNumberOfCCDsFromIRods(repository, dataset)
+        
+        return({'num_ccds': n,
                 'work_dir': workDir,
                 'user': 'foo',
                 'zone': 'fooZone',
@@ -190,8 +191,40 @@ class AcsWorkflow(Workflow):
 
 
 
-
-
+def _getNumberOfCCDsFromIRods(repository, dataset, 
+                              exe='/jwst/bin/irods.py',
+                              user='foo',
+                              zone='fooZone',
+                              password='condor',
+                              server='jwdmsdevvm2.stsci.edu',
+                              port=1247,
+                              root='/fooZone/home/foo'):
+    """
+    Fetch dataset from iRods and count the number of CCDs in it. Return that
+    number.
+    """
+    # FIXME: We should be getting all of these configs from a file.
+    # Create a temp file name.
+    (fid, path) = tempfile.mkstemp()
+    os.close(fid)
+    os.remove(path)
+    
+    err = os.system('%s irods://%s.%s:%s@%s:%d%s/%s/%s.fits %s.fits' % (exe, 
+                                                                   user, 
+                                                                   zone, 
+                                                                   password, 
+                                                                   server, 
+                                                                   port, 
+                                                                   root, 
+                                                                   repository, 
+                                                                   dataset, 
+                                                                   path))
+    if(err):
+        raise(Exception('Unable to access %s with iRODS' % (dataset)))
+    
+    n = _getNumberOfCCDs(*os.path.split(path))
+    os.remove(path + '.fits')
+    return(n)
 
 
 
