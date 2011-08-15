@@ -147,6 +147,7 @@ column:
     Instances = 4
 """
 import datetime
+import os
 import urllib
 import elixir
 from sqlalchemy import desc
@@ -158,35 +159,39 @@ import config
 
 
 # Define the database connection.
-has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
-port_info = ''
-connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
-
-# We need to handle a few special cases.
-# 0. The password miught contain characters that need to be escaped.
-pwd = urllib.quote_plus(config.DATABASE_PASSWORD)
-
-# 1. Database separator
-db_info = '/' + config.DATABASE_DB
-
-# 2. Yes/No port onformation and yes/no MSSQL.
-if(config.DATABASE_PORT and config.DATABASE_PORT != -1 and not has_mssql):
-    port_info += ':' + str(config.DATABASE_PORT)
-elif(config.DATABASE_PORT and config.DATABASE_PORT != -1):
-    port_info += '?port=' + str(config.DATABASE_PORT)
-
-# 3. MSSSQL wants a different connection string if a port is specified. Bug?
-if(has_mssql):
-    connection_str += '%(db_info)s%(port_info)s'
+# We use SQLite3 for testing and small installations...
+if(config.DATABASE_FLAVOUR == 'sqlite'):
+    elixir.metadata.bind = 'sqlite:///%s' %(os.path.abspath(config.DATABASE_DB))
 else:
-    connection_str += '%(port_info)s%(db_info)s'
-
-elixir.metadata.bind = connection_str % {'flavour': config.DATABASE_FLAVOUR,
-                                         'user': config.DATABASE_USER,
-                                         'passwd': pwd,
-                                         'host': config.DATABASE_HOST,
-                                         'port_info': port_info,
-                                         'db_info': db_info}
+    has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
+    port_info = ''
+    connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
+    
+    # We need to handle a few special cases.
+    # 0. The password miught contain characters that need to be escaped.
+    pwd = urllib.quote_plus(config.DATABASE_PASSWORD)
+    
+    # 1. Database separator
+    db_info = '/' + config.DATABASE_DB
+    
+    # 2. Yes/No port onformation and yes/no MSSQL.
+    if(config.DATABASE_PORT and config.DATABASE_PORT != -1 and not has_mssql):
+        port_info += ':' + str(config.DATABASE_PORT)
+    elif(config.DATABASE_PORT and config.DATABASE_PORT != -1):
+        port_info += '?port=' + str(config.DATABASE_PORT)
+    
+    # 3. MSSSQL wants a different connection string if a port is specified. Bug?
+    if(has_mssql):
+        connection_str += '%(db_info)s%(port_info)s'
+    else:
+        connection_str += '%(port_info)s%(db_info)s'
+    
+    elixir.metadata.bind = connection_str % {'flavour': config.DATABASE_FLAVOUR,
+                                             'user': config.DATABASE_USER,
+                                             'passwd': pwd,
+                                             'host': config.DATABASE_HOST,
+                                             'port_info': port_info,
+                                             'db_info': db_info}
 elixir.metadata.bind.echo = False
 
 
