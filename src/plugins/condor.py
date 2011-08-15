@@ -49,9 +49,27 @@ arguments       = "-f -l . -Debug 3 -Lockfile {{ dag_name }}.lock -AutoRescue 1 
 
 
 
+
+def which(exe):
+    """
+    Find and return `exe` in the user unix PATH.
+    """
+    path = os.environ.get('PATH', '')
+    for dir in path.split(':'):
+        if(os.path.exists(os.path.join(dir, exe))):
+            return(os.path.join(dir, exe))
+    return(None)
+
+
+
+
 def createJobTemplate(drmaaSession, dagName, workDir):
+    dagMan = which('condor_dagman')
+    if(not dagMan):
+        raise(Exception('Unable to find condor_dagman in $PATH'))
+    
     ad = drmaaSession.createJobTemplate()
-    ad.remoteCommand = '/usr/bin/condor_dagman'
+    ad.remoteCommand = dagMan
     ad.jobEnvironment = {'_CONDOR_DAGMAN_LOG': '%s.dagman.out' % (dagName),
                          '_CONDOR_MAX_DAGMAN_LOG': 0}
     ad.workingDirectory = workDir
