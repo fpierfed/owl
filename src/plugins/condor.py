@@ -34,6 +34,7 @@ import os
 import drmaa
 import jinja2
 
+from eunomia.utils import which
 
 
 
@@ -48,17 +49,6 @@ copy_to_spool	= False
 arguments       = "-f -l . -Debug 3 -Lockfile {{ dag_name }}.lock -AutoRescue 1 -DoRescueFrom 0 -Dag {{ dag_name }} -CsdVersion $CondorVersion:' '7.4.2' 'May' '20' '2010' 'BuildID:' 'Fedora-7.4.2-1.fc13' '$"''')
 
 
-
-
-def which(exe):
-    """
-    Find and return `exe` in the user unix PATH.
-    """
-    path = os.environ.get('PATH', '')
-    for dir in path.split(':'):
-        if(os.path.exists(os.path.join(dir, exe))):
-            return(os.path.join(dir, exe))
-    return(None)
 
 
 

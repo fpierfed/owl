@@ -26,16 +26,22 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""
+Useful code that does not belong any other place.
+"""
+import os
 
-# 
-# eunomia
-# 
-import config
-import blackboard
-import dag
-import job
-import workflow
 
-import plugins
-import utils
+
+def which(exe):
+    """
+    Find and return `exe` in the user unix PATH.
+    """
+    path = os.environ.get('PATH', '')
+    for dir in path.split(':'):
+        if(os.path.exists(os.path.join(dir, exe))):
+            return(os.path.join(dir, exe))
+    return(None)
+
+
 
