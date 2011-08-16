@@ -35,13 +35,13 @@ import tempfile
 import time
 
 from eunomia import job
+from eunomia.utils import which
 
 
 
 
 # Constants
 # TODO: We should be using condor_quill or similar system.
-CONDOR_ROOT = '/usr'
 # Timeout in seconds for the call to EXE.
 TIMEOUT = 5.
 
@@ -135,7 +135,7 @@ def _run(args, timeout=TIMEOUT):
 
 
 
-def condor_status(machine_name=None, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
+def condor_status(machine_name=None, timeout=TIMEOUT):
     """
     Wrapper around condor_status: retrieve the list of machines in the pool and 
     their current status. If `machine_name` == None, then return information on 
@@ -149,8 +149,7 @@ def condor_status(machine_name=None, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
                  'Error communicating with condor please try again later.'}, )
     
     # Invoke condot_status and write its output to a temp file.
-    exe = os.path.join(condor_root, 'bin', 'condor_status')
-    args = [exe, '-long']
+    args = [which('condor_status'), '-long']
     if(machine_name):
         args.append(machine_name)
     stdout = _run_and_get_stdout(args, timeout)
@@ -163,7 +162,7 @@ def condor_status(machine_name=None, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
     return(machines)
     
 
-def condor_hold(job_id, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
+def condor_hold(job_id, timeout=TIMEOUT):
     """
     Wrapper around condor_hold: put the job with the given `job_id` on hold.
     
@@ -171,11 +170,10 @@ def condor_hold(job_id, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
         condor_hold exit code
     """
     # Invoke condot_hold.
-    return(_run((os.path.join(condor_root, 'bin', 'condor_hold'), str(job_id)), 
-                timeout))
+    return(_run((which('condor_hold'), str(job_id)), timeout))
 
 
-def condor_release(job_id, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
+def condor_release(job_id, timeout=TIMEOUT):
     """
     Wrapper around condor_release: release the job with the given `job_id`.
     
@@ -183,9 +181,7 @@ def condor_release(job_id, condor_root=CONDOR_ROOT, timeout=TIMEOUT):
         condor_release exit code
     """
     # Invoke condot_release.
-    return(_run((os.path.join(condor_root, 'bin', 'condor_release'), 
-                 str(job_id)), 
-                timeout))
+    return(_run((which('condor_release'), str(job_id)), timeout))
 
 
 
