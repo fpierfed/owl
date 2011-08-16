@@ -40,7 +40,7 @@ Universe                = vanilla
 Log                     = {{ dataset }}.log
 +InputDataset           = "{{ dataset }}"
 
-Should_Transfer_Files   = IF_NEEDED
+Should_Transfer_Files   = ALWAYS
 When_to_Transfer_Output = ON_EXIT
 transfer_input_files    = {{ dataset }}_dqicorr_$(Process).fits
 
