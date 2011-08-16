@@ -43,7 +43,7 @@ Log                     = {{ dataset }}.log
 Should_Transfer_Files   = ALWAYS
 When_to_Transfer_Output = ON_EXIT
 
-+HookKeyword            = "FOO"
++HookKeyword            = "OWL"
 +Instances              = 1
 
 Notification            = Never

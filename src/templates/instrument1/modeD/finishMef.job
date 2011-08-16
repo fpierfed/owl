@@ -46,7 +46,7 @@ When_to_Transfer_Output = ON_EXIT
 {% set comma = joiner(",") %}
 transfer_input_files    = {% for i in range(num_ccds) -%}{{ comma() }}{{ dataset }}_calib_{{ i }}.fits{% endfor %}
 
-+HookKeyword            = "FOO"
++HookKeyword            = "OWL"
 +Instances              = 1
 
 Notification            = Never
