@@ -1,0 +1,11 @@
+Process a full ACS association.
+
+This is a simplified version of the HLA ACS pipeline. It does an initial setup 
+step where it makes sure that the environment is OK. Then it runs CALACS on each
+exposure of the visit in parallel. FInally it runs multidrizzle on the 
+calibrated exposures. Its structure is essentially the same as the BCW.
+
+The interesting thing here (and differently from the BCW) is that the meaning of
+DATASET changes through the execution of teh workflow. In the case of the first 
+and last step (i.e. setup and multidrizzle) DATASET is teh name of the visit. 
+For calacs, it is the name of the exposure part of the visit.

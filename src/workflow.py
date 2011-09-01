@@ -191,6 +191,20 @@ class AcsWorkflow(Workflow):
 
 
 
+class AcsSimpleWorkflow(Workflow):
+    """
+    ACS Simple workflow.
+    """
+    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
+                         extraEnvironment):
+        # Exposures are *_raw.fits files inside repository/dataset. Just return 
+        # the list of exposure root names.
+        dir = os.path.join(repository, dataset)
+        return({'exposures': [f[:-9] for f in os.listdir(dir) \
+                              if f.endswith('_raw.fits')]})
+
+
+
 def _getNumberOfCCDsFromIRods(repository, dataset, 
                               exe='/jwst/bin/irods.py',
                               user='foo',
