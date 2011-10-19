@@ -85,7 +85,7 @@ process_dataset.py OPTIONS <dataset root>
 OPTIONS
     -r, --repository=PATH               path to the raw data respository
     -i, --instrument=INS                instrument name
-    -i, --mode=MODE                     instrument mode
+    -m, --mode=MODE                     instrument mode
     -g, --grid-middleware=MIDDLEWARE    middleware name
     -e,--env=KEY=VAL(,KEY=VAL)*
     
