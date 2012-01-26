@@ -89,11 +89,12 @@ def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
         # Create a instrument/mode Workflow instance (dataset independent)...
         wflow = workflow.AcsSimpleWorkflow(templateRoot=templateRoot)
         # ... and submit it to the grid (for this particular piece of data).
-        wflow.execute(codeRoot=codeRoot, 
-                      repository=repository, 
-                      dataset=dataset, 
-                      workDir=workDir,
-                      flavour=middleware)
+        _id = wflow.execute(codeRoot=codeRoot, 
+                            repository=repository, 
+                            dataset=dataset, 
+                            workDir=workDir,
+                            flavour=middleware)
+        print('Dataset %s submitted as job %s' % (dataset, _id))
     return(0)
     
 

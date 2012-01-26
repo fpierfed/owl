@@ -91,4 +91,4 @@ def submit(dagName, workDir):
     
     # Close the DRMAA session.
     session.exit()
-    return(0)
+    return(jobId)
