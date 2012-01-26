@@ -137,6 +137,48 @@ def update(entries, key, val):
 
 
     
+if(__name__ == '__main__'):
+    import time
+    import workflow
+    
+    
+    
+    w = None
+    n = 100
+    sleep_time = 60.
+    # Workflow classes are named
+    #   uppercase(<instrument>)AsnWorkflow or
+    #   uppercase(<instrument>)ExpWorkflow or
+    W_TEMPLATE = '%(inst)s%(typ)sWorkflow'
+    try:
+        while(True):
+            entries = pop(limit=100)
+            for e in entries:
+                print('About to process dataset %s' % (e.datasetName))
+                
+                # Determine instrument type.
+                instrument = dataset_to_instrument(e.datasetName)
+                
+                # Determine whether this is an association or a simple exposure.
+                dataset_type = 'Exp'
+                if(is_association(instrument, e.datasetName)):
+                    dataset_type = 'Asn'
+                
+                # Instantiate!
+                W = getattr(workflow, W_TEMPLATE % {'inst': instrument.upper(),
+                                                    'typ': dataset_type})
+                _id = W().execute(dataset=e.datasetName)
+                e.workflowId = _id
+                print('Submitted dataset %s as job %s' % (e.datasetName, _id))
+                
+            # Now that we have submitted all the entries to OWL/Condor, they 
+            # have been assigned a new workflow ID (by the execute method above)
+            # Simply write the changs to the DB and then sleep so that we do not
+            # saturate the cluster.
+            elixir.session.commit()
+            time.sleep(sleep_time)
+    except KeyboardInterrupt:
+        print('All done.')
 
 
 
