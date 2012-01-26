@@ -91,4 +91,10 @@ def submit(dagName, workDir):
     
     # Close the DRMAA session.
     session.exit()
-    return(jobId)
+    # Mannage jobId so that it corresponds more closely to what is stored in the
+    # database: 
+    #   <hostname>#<cluster id>.<job id> instead of
+    #   <hostname>.<cluster id>.<job id> that we have here.
+    # The database version of this id appends #<timestamp> to what we have here.
+    hostname, clusterId, jobId = jobId.rsplit('.', 2)
+    return('%s#%s.%s' % (hostname, clusterId, jobId))
