@@ -95,6 +95,7 @@ def submit(dagName, workDir):
     # database: 
     #   <hostname>#<cluster id>.<job id> instead of
     #   <hostname>.<cluster id>.<job id> that we have here.
-    # The database version of this id appends #<timestamp> to what we have here.
+    # The database version of this id appends #<timestamp> to what we have here
+    # as well as replacing the hostname with the fully qualified host name.
     hostname, clusterId, jobId = jobId.rsplit('.', 2)
     return('%s#%s.%s' % (hostname, clusterId, jobId))
