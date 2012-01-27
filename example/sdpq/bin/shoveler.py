@@ -58,7 +58,7 @@ class SDPQ(elixir.Entity):
     datasetName = elixir.Field(elixir.Unicode(255), primary_key=True)
     insertDate = elixir.Field(elixir.DateTime)
     priority = elixir.Field(elixir.Integer)
-    wasPrioritized = elixir.Field(elixir.Boolean, default=False)
+    wasPrioritized = elixir.Field(elixir.Integer, default=0)
     shoveledDate = elixir.Field(elixir.DateTime, required=False)
     workflowId = elixir.Field(elixir.Unicode(255), required=False)
     
@@ -122,7 +122,7 @@ def pop(limit=None, offset=0):
         entries = entries[:limit]
     
     # Mark them as shoveled.
-    return(update(entries, 'shoveledDate', datetime.datetime.now()))
+    return(entries)
 
 
 def update(entries, key, val):
@@ -174,6 +174,7 @@ if(__name__ == '__main__'):
                                                     'typ': dataset_type})
                 _id = W().execute(dataset=e.datasetName)
                 e.workflowId = _id
+                e.shoveledDate = datetime.datetime.now()
                 print('Submitted dataset %s as job %s' % (e.datasetName, _id))
                 
             # Now that we have submitted all the entries to OWL/Condor, they 
