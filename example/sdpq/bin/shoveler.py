@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import datetime
 import os
+import urllib
 
 import elixir
 from sqlalchemy import desc
@@ -8,6 +9,7 @@ from sqlalchemy import desc
 from eunomia import config
 
 # Define the database connection.
+config.DATABASE_DB = 'sdpqdev'
 # We use SQLite3 for testing and small installations...
 if(config.DATABASE_FLAVOUR == 'sqlite'):
     elixir.metadata.bind = 'sqlite:///%s' %(os.path.abspath(config.DATABASE_DB))
@@ -51,13 +53,14 @@ class SDPQ(elixir.Entity):
     """
     Interface to the SDPQ database table(s).
     """
-    elixir.using_options(tablename='queue')
+    elixir.using_options(tablename='SdpQueue')
     
-    datasetName = elixir.Field(elixir.Unicode(255))
+    datasetName = elixir.Field(elixir.Unicode(255), primary_key=True)
     insertDate = elixir.Field(elixir.DateTime)
     priority = elixir.Field(elixir.Integer)
-    shoveledDate = elixir.Field(elixir.DateTime)
-    workflowId = elixir.Field(elixir.Unicode(255))
+    wasPrioritized = elixir.Field(elixir.Boolean, default=False)
+    shoveledDate = elixir.Field(elixir.DateTime, required=False)
+    workflowId = elixir.Field(elixir.Unicode(255), required=False)
     
 
 
@@ -83,7 +86,7 @@ class History(elixir.Entity):
     """
     Interface to the SDPQ database table(s).
     """
-    elixir.using_options(tablename='history')
+    elixir.using_options(tablename='SdpHistory')
     
     datasetName = elixir.Field(elixir.Unicode(255))
     insertDate = elixir.Field(elixir.DateTime)
@@ -142,7 +145,6 @@ if(__name__ == '__main__'):
     import workflow
     
     
-    
     w = None
     n = 100
     sleep_time = 60.
@@ -153,6 +155,9 @@ if(__name__ == '__main__'):
     try:
         while(True):
             entries = pop(limit=100)
+            if(not entries):
+                print('Nothing to do at the moment.')
+            
             for e in entries:
                 print('About to process dataset %s' % (e.datasetName))
                 
