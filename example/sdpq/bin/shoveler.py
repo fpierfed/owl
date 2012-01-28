@@ -9,7 +9,6 @@ from sqlalchemy import desc
 from eunomia import config
 
 # Define the database connection.
-config.DATABASE_DB = 'sdpqdev'
 # We use SQLite3 for testing and small installations...
 if(config.DATABASE_FLAVOUR == 'sqlite'):
     elixir.metadata.bind = 'sqlite:///%s' %(os.path.abspath(config.DATABASE_DB))
@@ -17,6 +16,7 @@ else:
     has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
     port_info = ''
     connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
+    config.DATABASE_DB = 'sdpqdev'
     
     # We need to handle a few special cases.
     # 0. The password miught contain characters that need to be escaped.
@@ -138,6 +138,21 @@ def update(entries, key, val):
     return(entries)
 
 
+def dataset_to_instrument(dataset):
+    if(dataset.lower().startswith('j')):
+        return('ACS')
+    raise(NotImplementedException('Unknown instrument for %s' % (dataset)))
+
+
+def is_association(instrument, dataset):
+    if(dataset.endswith('0')):
+        return(True)
+    return(False)
+
+
+
+
+
 
     
 if(__name__ == '__main__'):
@@ -148,10 +163,13 @@ if(__name__ == '__main__'):
     w = None
     n = 100
     sleep_time = 60.
+    REPO_ROOT = '/jwst/data/repository/raw'
     # Workflow classes are named
     #   uppercase(<instrument>)AsnWorkflow or
     #   uppercase(<instrument>)ExpWorkflow or
     W_TEMPLATE = '%(inst)s%(typ)sWorkflow'
+    TEMPLATE_ROOT = os.path.join(os.path.dirname(__file__), '..', 'templates')
+    CODE_ROOT = '/jwst'
     try:
         while(True):
             entries = pop(limit=100)
@@ -169,10 +187,23 @@ if(__name__ == '__main__'):
                 if(is_association(instrument, e.datasetName)):
                     dataset_type = 'Asn'
                 
-                # Instantiate!
+                # Create a simple work directory path: workRoot/<user>_<timestamp>
+                dir_name = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), 
+                                      time.time())
+                work_dir = os.path.join(config.WORK_ROOT, dir_name)
+                
+                # Run!
+                repo_dir = os.path.join(REPO_ROOT, instrument.lower())
+                templ_dir = os.path.join(TEMPLATE_ROOT, 
+                                         instrument.lower(), 
+                                         dataset_type.lower())
                 W = getattr(workflow, W_TEMPLATE % {'inst': instrument.upper(),
                                                     'typ': dataset_type})
-                _id = W().execute(dataset=e.datasetName)
+                _id = W(templ_dir).execute(dataset=e.datasetName,
+                                           codeRoot=CODE_ROOT,
+                                           repository=repo_dir,
+                                           workDir=work_dir,
+                                           flavour='condor')
                 e.workflowId = _id
                 e.shoveledDate = datetime.datetime.now()
                 print('Submitted dataset %s as job %s' % (e.datasetName, _id))
