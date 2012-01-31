@@ -7,17 +7,33 @@ from sqlalchemy import desc
 
 
 
+# dataset_name[0] -> instrument mapping.
+# I=WFPC3 L=COS I=WFC3 J=ACS N=NICMOS O=STIS U=WFPC2 W=WFPC X=FOC Y=FOS Z=GHRS 
+# F=FGS V=HSP
+DATASET_INSTRUMENT = {'i': 'WFPC3',
+                      'l': 'COS',
+                      'j': 'ACS',
+                      'n': 'NICMOS',
+                      'o': 'STIS',
+                      'u': 'WFPC2',
+                      'w': 'WFPC',
+                      'x': 'FOC',
+                      'y': 'FOS',
+                      'z': 'GHRS',
+                      'f': 'FGS',
+                      'v': 'HSP'}
 
-def dataset_to_instrument(dataset):
-    if(dataset.lower().startswith('j')):
-        return('ACS')
-    raise(NotImplementedException('Unknown instrument for %s' % (dataset)))
+
+
+def dataset_to_instrument(dataset, mapping=DATASET_INSTRUMENT):
+    instr = mapping.get(dataset.lower()[0], None)
+    if(instr is None):
+        raise(NotImplementedException('Unknown instrument for %s' % (dataset)))
+    return(instr)
 
 
 def is_association(instrument, dataset):
-    if(dataset.endswith('0')):
-        return(True)
-    return(False)
+    return(dataset.endswith('0'))
 
 
 
