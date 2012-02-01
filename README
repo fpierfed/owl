@@ -1,18 +1,18 @@
-Eunomia
+OWL
 "Governance according to good laws"
 
-Eunomia is a pipeline/workflow execution framework designed to be simple and 
-lightweight. Its intended mode of operation is the repeated execution of fairly 
+OWL is a pipeline/workflow execution framework designed to be simple and
+lightweight. Its intended mode of operation is the repeated execution of fairly
 static workflows. This is the mode of operation of data centers and astronomical
 observatories, more than individual researchers.
 
 
 Requirements
-Eunomia requires a recent version of Python (it has been tested with Python 2.5,
-2.6 and 2.7. Compatibility with Python 3.x has not been tested yet). You can 
+OWL requires a recent version of Python (it has been tested with Python 2.5, 2.6
+and 2.7. Compatibility with Python 3.x has not been tested yet). You can
 download Python from http://www.python.org
 
-In addition to Python, Eunomia relies on a small number of Python packages:
+In addition to Python, OWL relies on a small number of Python packages:
  - elixir (http://elixir.ematia.de/trac/wiki) used as ORM
  - sqlalchemy (http://www.sqlalchemy.org/) used as ORM
  - jinja2 (http://jinja.pocoo.org/) used for templating
@@ -29,7 +29,7 @@ and manually copy libdrmaa to the appropriate system directory.
 
 
 Operations
-The main concepts in Eunomia are that of a workflow and of a workflow template.
+The main concepts in OWL are that of a workflow and of a workflow template.
 A workflow is simply a sequence of steps and requirements between steps. An 
 example of a workflow could be the following:
     A - Get into your car
@@ -69,5 +69,5 @@ nodes to be described irrespective of runtime environment considerations such as
 the location and names of the data files to process or version and location of
 the code to use in the execution of the workflow.
 
-Eunomia comes with a sample template and a script (process_dataset.py) to 
-illustrate a possible pseudo-science workflow.
+OWL comes with a sample template and a script (process_dataset.py) to illustrate
+a possible pseudo-science workflow.

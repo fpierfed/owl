@@ -30,7 +30,7 @@
 HLA Lib
 
 A set of convenience functions and constants to handle HLA processing from 
-Condor/Eunomia. User code building upon this library is supposed to override 
+Condor/OWL. User code building upon this library is supposed to override 
 constants where appropriate.
 """
 import os
