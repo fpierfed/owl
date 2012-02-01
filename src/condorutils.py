@@ -34,8 +34,8 @@ import subprocess
 import tempfile
 import time
 
-from eunomia import job
-from eunomia.utils import which
+from owl import job
+from owl.utils import which
 
 
 
@@ -50,7 +50,7 @@ TIMEOUT = 5.
 def _parse_machine_classad(stdout):
     """
     Parse a machine ClassAd list and return an object per machine. We re-use the
-    Job class from eunomia since it is general enough (for now).
+    Job class from owl since it is general enough (for now).
     """
     machines = []
     

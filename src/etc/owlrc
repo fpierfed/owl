@@ -28,12 +28,12 @@
 # DAMAGE.
 
 # 
-# eunomia configuration file
+# owl configuration file
 # 
-# eunomia looks for its configuration file in these locations (in order):
-#   $HOME/.eunomiarc
-#   /etc/eunomiarc
-#   <eunomia install dir>/etc/eunomiarc
+# owl looks for its configuration file in these locations (in order):
+#   $HOME/.owlrc
+#   /etc/owlrc
+#   <owl install dir>/etc/owlrc
 # 
 [Database]
 # SQLAlchemy supported databases

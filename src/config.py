@@ -35,15 +35,15 @@ import os
 # Find the config file.
 config = None
 try:
-    names = (os.path.join(os.environ['HOME'], '.eunomiarc'),
-             os.path.join('/etc', 'eunomiarc'),
+    names = (os.path.join(os.environ['HOME'], '.owlrc'),
+             os.path.join('/etc', 'owlrc'),
              os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                          'etc', 'eunomiarc'))
+                          'etc', 'owlrc'))
 except:
     # HOME is not necessarily defined (especially in a web environment).
-    names = (os.path.join('/etc', 'eunomiarc'),
+    names = (os.path.join('/etc', 'owlrc'),
              os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                          'etc', 'eunomiarc'))
+                          'etc', 'owlrc'))
 for name in names:
     if(os.path.exists(name)):
         config = ConfigParser.RawConfigParser(defaults={'port': -1})

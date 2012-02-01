@@ -35,8 +35,8 @@ import os
 
 import jinja2
 
-from eunomia import dag
-from eunomia import job
+from owl import dag
+from owl import job
 
 
 

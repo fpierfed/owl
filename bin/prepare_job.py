@@ -31,8 +31,8 @@ import logging
 import os
 import sys
 
-from eunomia import blackboard
-from eunomia import job
+from owl import blackboard
+from owl import job
 
 
 

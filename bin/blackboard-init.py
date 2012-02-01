@@ -30,7 +30,7 @@
 
 import elixir
 
-from eunomia.blackboard import *
+from owl.blackboard import *
 
 
 

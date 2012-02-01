@@ -71,8 +71,8 @@ Supported middleware is 'condor', 'makefile' or 'xgrid'.
 import os
 import time
 
-from eunomia import config
-from eunomia import workflow
+from owl import config
+from owl import workflow
 
 
 

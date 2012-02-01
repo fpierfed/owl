@@ -38,7 +38,7 @@ if __name__ == "__main__":
     SCRIPTS = glob.glob('bin/*.py')
     
     
-    setup(name = 'eunomia', 
+    setup(name = 'owl', 
           description = "Governance according to good laws", 
           author = "Francesco Pierfederici", 
           author_email = "fpierfed@stsci.edu",
@@ -46,8 +46,8 @@ if __name__ == "__main__":
           version='0.1',
           
           scripts=SCRIPTS,
-          packages=['eunomia', 'eunomia.plugins', ],
-          package_dir={'eunomia': 'src'},
-          package_data={'eunomia': ['etc/*', 'templates/*/*/*', ]},
+          packages=['owl', 'owl.plugins', ],
+          package_dir={'owl': 'src'},
+          package_data={'owl': ['etc/*', 'templates/*/*/*', ]},
 )
 

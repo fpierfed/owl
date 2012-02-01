@@ -73,8 +73,8 @@ File transfer uses iRODS.
 import os
 import time
 
-from eunomia import config
-from eunomia import workflow
+from owl import config
+from owl import workflow
 
 
 

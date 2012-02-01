@@ -1,4 +1,4 @@
-from eunomia import workflow as _workflow
+from owl import workflow as _workflow
 
 
 class ACSAsnWorkflow(_workflow.AcsSimpleWorkflow):

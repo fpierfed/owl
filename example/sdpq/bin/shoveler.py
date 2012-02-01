@@ -44,7 +44,7 @@ def is_association(instrument, dataset):
 if(__name__ == '__main__'):
     import time
     import sdpq
-    from eunomia import config
+    from owl import config
     
     
     w = None

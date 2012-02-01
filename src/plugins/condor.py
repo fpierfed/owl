@@ -34,7 +34,7 @@ import os
 import drmaa
 import jinja2
 
-from eunomia.utils import which
+from owl.utils import which
 
 
 

@@ -6,7 +6,7 @@ import workflow
 import elixir
 from sqlalchemy import desc
 
-from eunomia import config
+from owl import config
 # Define the database connection.
 # We use SQLite3 for testing and small installations...
 if(config.DATABASE_FLAVOUR == 'sqlite'):

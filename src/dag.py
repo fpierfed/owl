@@ -27,7 +27,7 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 """
-Handle the parsing of Eunomia DAG files into Python objects.
+Handle the parsing of OWL DAG files into Python objects.
 """
 import os
 

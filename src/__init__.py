@@ -28,7 +28,7 @@
 # DAMAGE.
 
 # 
-# eunomia
+# owl
 # 
 import config
 import blackboard
