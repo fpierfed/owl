@@ -43,6 +43,7 @@ Log                     = {{ dataset }}.log
 Should_Transfer_Files   = YES
 When_to_Transfer_Output = ON_EXIT
 transfer_input_files    = irods://foo.fooZone:condor@jwdmsdevvm2.stsci.edu:1247{{ root }}/{{ repository }}/{{ dataset }}.fits
+GetEnv                  = True
 
 +HookKeyword            = "OWL"
 +Instances              = 1
