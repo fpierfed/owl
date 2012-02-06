@@ -31,6 +31,7 @@
 # owl configuration file
 # 
 # owl looks for its configuration file in these locations (in order):
+#   $OWL_CONFIG_DIR/owlrc
 #   $HOME/.owlrc
 #   /etc/owlrc
 #   <owl install dir>/etc/owlrc

@@ -34,16 +34,24 @@ import os
 
 # Find the config file.
 config = None
-try:
-    names = (os.path.join(os.environ['HOME'], '.owlrc'),
-             os.path.join('/etc', 'owlrc'),
-             os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                          'etc', 'owlrc'))
-except:
-    # HOME is not necessarily defined (especially in a web environment).
-    names = (os.path.join('/etc', 'owlrc'),
-             os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                          'etc', 'owlrc'))
+names = []
+
+# We look for the configuration file in a few places, in order:
+#   1.$OWL_CONFIG_DIR/owlrc
+#   2. $HOME/.owlrc
+#   3. /etc/owlrc
+#   4. <owl install directory>/etc/owlrc
+# In some environments, $HOME is not defined and so $HOME/.owlrc is skipped. 
+# Also OWL_CONFIG_DIR might not be defined and, if so,  should be skipped.
+owlConfigDir = os.environ.get('OWL_CONFIG_DIR', None)
+if(owlConfigDir):
+    names.append(os.path.join(owlConfigDir, 'owlrc'))
+homeDir = os.environ.get('HOME', None)
+if(homeDir):
+    names.append(os.path.join(homeDir, '.owlrc'))
+names.append(os.path.join('/etc', 'owlrc'))
+names.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                          'etc', 'owlrc'))
 for name in names:
     if(os.path.exists(name)):
         config = ConfigParser.RawConfigParser(defaults={'port': -1})
