@@ -41,7 +41,7 @@ def getOwlEnvironment(job):
     except:
         jobEnvStr = ''
     # Replace ' ' with a placeholder.
-    jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
+    jobEnvStr = jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
     tokens = jobEnvStr.split()
     for token in tokens:
         # If this fails is because we have screwed up badly and we need to know.
@@ -67,7 +67,6 @@ def setupLogger(name):
             tmpPath = os.environ[k]
             break
     
-    # Constants
     logName = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
     LOG_FILE_NAME = os.path.join(tmpPath, logName)
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -114,7 +113,7 @@ if(__name__ == '__main__'):
     logger = setupLogger('prepare_job')
     
     # Read the raw ClassAd from STDIN and create a Job instance.
-    logger.debug("Parsing STDIN to create a Job instance.")
+    logger.debug("Parsing STDIN to create a Job instance.")    
     job = getJob(sys.stdin)
     logger.debug("Created job instance.")
     
@@ -125,7 +124,7 @@ if(__name__ == '__main__'):
         os.environ[k] = owlEnv[k]
     
     # Now create (or uodate if already there) a Blackboard entry for job.
-    logger.deug('Upodating the blackboard.')
+    logger.debug('Upodating the blackboard.')
     try:
         createBlackboardEntry(job)
     except:
