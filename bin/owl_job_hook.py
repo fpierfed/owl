@@ -27,6 +27,20 @@
 # TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
+"""
+This is a single-entry OWL blackboard management Condor Job Hook.
+
+It is assumed that the reader is familiar with Condor and the Job Hook mechanics
+(described in section 4.4 of the Condor manual).
+
+Instead of defining three different scripts for the 'Prepare Job', 'Update Job 
+Info' and 'Job Exit' Starter Hooks, we only have this one. Differentiating 
+between the three roles is done by noting that a 'Job Exit' Hook is the only one
+which is passed arguments on the command-line. In addition, ClassAds passed as
+STDIN to 'Prepare Job' Hooks lack these attributes: JobState, JobPid, NumPids,
+JobStartDate, RemoteSysCpu, RemoteUserCpu and ImageSize. OWL does add JobState 
+if not present and sets it to 'Starting'.
+"""
 import logging
 import os
 import sys
@@ -82,7 +96,7 @@ def setupLogger(name):
 
 
 
-def createBlackboardEntry(ad):
+def createOrUpdateBlackboardEntry(ad):
     from owl.job import Job
     from owl import blackboard
     
@@ -108,18 +122,53 @@ def createBlackboardEntry(ad):
     return
 
 
+def closeBlackboardEntry(ad):
+    from owl.job import Job
+    from owl import blackboard
+    
+    
+    # Create a Job instance from the ClassAd.
+    job = Job.newFromClassAd(ad)
+    
+    # Close the Blackboard entry corresponding to job.
+    blackboard.closeEntry(job)
+    return
+
+
 
 
 
 if(__name__ == '__main__'):
-    logger = setupLogger('prepare_job')
+    EXTRA_ATTRS = ('JobState', 'JobPid', 'NumPids', 'JobStartDate', 
+                   'RemoteSysCpu', 'RemoteUserCpu', 'ImageSize')
+    
+    
+    # Setup logging.
+    logger = setupLogger('owl_blackboard_hooks')
     
     # Read the raw ClassAd from STDIN and create a Job instance.
     logger.debug("Parsing STDIN.")    
     ad = sys.stdin.read()
     
-    # Agument the (very restricted) environment with OWL specific variables defined
-    # in job.Environment (if any).
+    # Determine the role of this hook.
+    role = None
+    if(len(sys.argv) > 1):
+        exitReason = sys.argv[1]
+        role = 'job_exit'
+    else:
+        exitReason = None
+        n = 0
+        for attr in EXTRA_ATTRS:
+            if(attr + ' =' in ad):
+                n += 1
+        if(n > len(EXTRA_ATTRS) / 2.):
+            role = 'update_job'
+        else:
+            role = 'prepare_job'
+    logger.debug('Script invoked as %s hook.' % (role))
+    
+    # Agument the (very restricted) environment with OWL specific variables 
+    # defined in the job/ClassAd Environment (if any).
     owlEnv = getOwlEnvironment(ad)
     for k in owlEnv.keys():
         v = owlEnv[k]
@@ -129,10 +178,18 @@ if(__name__ == '__main__'):
     from owl.config import *
     logger.debug('OWL DATABASE_CONNECTION_STR = %s' % (DATABASE_CONNECTION_STR))
     
-    # Now create (or uodate if already there) a Blackboard entry for job.
+    
+    if(role == 'job_exit'):
+        # Close the Blackboard entry and be happy.
+        fn = closeBlackboardEntry
+    else:
+        # create (or uodate if already there) a Blackboard entry for job.
+        fn = createOrUpdateBlackboardEntry
+    
+    # What are you waiting for?
     logger.debug('Upodating the blackboard.')
     try:
-        createBlackboardEntry(ad)
+        fn(ad)
     except:
         logger.exception('Error updating the database.')
     else:
