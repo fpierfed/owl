@@ -30,48 +30,63 @@
 # Parse the config file and specify defaults inline.
 import ConfigParser
 import os
+import sys
+
+from utils import dbConnectionStr
 
 
-# Find the config file.
+
+
+# We look for the configuration file in two places, in order:
+#   1. /etc/owlrc
+#   2. <owl install directory>/etc/owlrc
+# 
+# However, users can override every configuration entry by defining environment 
+# variables called 
+#   OWL_<uppercase group name>_<uppercase key name>
+# e.g.
+#   OWL_DIRECTORIES_PIPELINE_ROOT
+# 
+# There are two entries that are not present in the configuration file but that 
+# can be overridden via environment variables. Those are
+#   1. DATABASE_CONNECTION_STR
+#   2. DIRECTORIES_TEMPLATE_ROOT
 config = None
-names = []
-
-# We look for the configuration file in a few places, in order:
-#   1.$OWL_CONFIG_DIR/owlrc
-#   2. $HOME/.owlrc
-#   3. /etc/owlrc
-#   4. <owl install directory>/etc/owlrc
-# In some environments, $HOME is not defined and so $HOME/.owlrc is skipped. 
-# Also OWL_CONFIG_DIR might not be defined and, if so,  should be skipped.
-owlConfigDir = os.environ.get('OWL_CONFIG_DIR', None)
-if(owlConfigDir):
-    names.append(os.path.join(owlConfigDir, 'owlrc'))
-homeDir = os.environ.get('HOME', None)
-if(homeDir):
-    names.append(os.path.join(homeDir, '.owlrc'))
-names.append(os.path.join('/etc', 'owlrc'))
-names.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                                          'etc', 'owlrc'))
+names = (os.path.join('/etc', 'owlrc'),
+         os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                      'etc', 'owlrc'))
 for name in names:
     if(os.path.exists(name)):
         config = ConfigParser.RawConfigParser(defaults={'port': -1})
         config.read(name)
         break
-
-# Export the config values as constants for the module.
 if(not config):
     raise(Exception('No configuration file found in any of %s' % (str(names))))
 
-# Configuration!
-DATABASE_HOST = config.get('Database', 'host')
-DATABASE_PORT = config.getint('Database', 'port')
-DATABASE_USER = config.get('Database', 'user')
-DATABASE_PASSWORD = config.get('Database', 'password')
-DATABASE_DB = config.get('Database', 'database')
-DATABASE_FLAVOUR = config.get('Database', 'flavour')
+# Fetch the user environment.
+env = os.environ
 
-PIPELINE_ROOT = config.get('Directories', 'pipeline_root')
-WORK_ROOT = config.get('Directories', 'work_root')
+# Export the config values as constants for the module. Override what we read in
+# the config file with the corresponding environment variable, if found.
+module = sys.modules[__name__]
+for section in config.sections():
+    for option in config.options(section):
+        var = '%s_%s' % (section.upper(), option.upper())
+        env_var = 'OWL_' + var
+        val = env.get(env_var, config.get(section, option))
+        setattr(module, var, val)
 
-TEMPLATE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'templates')
+# Now the template root directory. We might end up putting this in the config 
+# file as well.
+here = os.path.dirname(os.path.abspath(__file__))
+DIRECTORIES_TEMPLATE_ROOT = env.get('OWL_DIRECTORIES_TEMPLATE_ROOT', 
+                                    os.path.join(here, 'templates'))
+
+# Finally the database connection string.
+DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR', 
+                                  dbConnectionStr(DATABASE_FLAVOUR,
+                                                  DATABASE_USER,
+                                                  DATABASE_PASSWORD,
+                                                  DATABASE_HOST,
+                                                  DATABASE_PORT,
+                                                  DATABASE_DATABASE))

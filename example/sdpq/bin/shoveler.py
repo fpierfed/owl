@@ -77,7 +77,7 @@ if(__name__ == '__main__'):
                 # Create a simple work directory path: workRoot/<user>_<timestamp>
                 dir_name = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), 
                                       time.time())
-                work_dir = os.path.join(config.WORK_ROOT, dir_name)
+                work_dir = os.path.join(config.DIRECTORIES_WORK_ROOT, dir_name)
                 
                 # Run!
                 repo_dir = os.path.join(REPO_ROOT, instrument.lower())

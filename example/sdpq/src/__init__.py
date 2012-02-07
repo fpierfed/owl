@@ -6,42 +6,21 @@ import workflow
 import elixir
 from sqlalchemy import desc
 
-from owl import config
-# Define the database connection.
-# We use SQLite3 for testing and small installations...
-if(config.DATABASE_FLAVOUR == 'sqlite'):
-    elixir.metadata.bind = 'sqlite:///%s' %(os.path.abspath(config.DATABASE_DB))
-else:
-    has_mssql = config.DATABASE_FLAVOUR.startswith('mssql')
-    port_info = ''
-    connection_str = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
-    config.DATABASE_DB = 'sdpqdev'
-    
-    # We need to handle a few special cases.
-    # 0. The password miught contain characters that need to be escaped.
-    pwd = urllib.quote_plus(config.DATABASE_PASSWORD)
-    
-    # 1. Database separator
-    db_info = '/' + config.DATABASE_DB
-    
-    # 2. Yes/No port onformation and yes/no MSSQL.
-    if(config.DATABASE_PORT and config.DATABASE_PORT != -1 and not has_mssql):
-        port_info += ':' + str(config.DATABASE_PORT)
-    elif(config.DATABASE_PORT and config.DATABASE_PORT != -1):
-        port_info += '?port=' + str(config.DATABASE_PORT)
-    
-    # 3. MSSSQL wants a different connection string if a port is specified. Bug?
-    if(has_mssql):
-        connection_str += '%(db_info)s%(port_info)s'
-    else:
-        connection_str += '%(port_info)s%(db_info)s'
-    
-    elixir.metadata.bind = connection_str % {'flavour': config.DATABASE_FLAVOUR,
-                                             'user': config.DATABASE_USER,
-                                             'passwd': pwd,
-                                             'host': config.DATABASE_HOST,
-                                             'port_info': port_info,
-                                             'db_info': db_info}
+from owl.config import DATABASE_FLAVOUR
+from owl.config import DATABASE_USER
+from owl.config import DATABASE_PASSWORD
+from owl.config import DATABASE_HOST
+from owl.config import DATABASE_PORT
+from owl.utils import dbConnectionStr
+
+
+# Connect to the database.
+elixir.metadata.bind = dbConnectionStr(DATABASE_FLAVOUR,
+                                       DATABASE_USER,
+                                       DATABASE_PASSWORD,
+                                       DATABASE_HOST,
+                                       DATABASE_PORT,
+                                       dbName='sdpqdev')
 elixir.metadata.bind.echo = False
 
 
