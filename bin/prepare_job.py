@@ -34,12 +34,17 @@ import sys
 
 
 
-def getOwlEnvironment(job):
+def getOwlEnvironment(ad):
     env = {}
-    try:
-        jobEnvStr = job.Environment
-    except:
-        jobEnvStr = ''
+    
+    # Find the Environment = ... line.
+    jobEnvStr = ''
+    for line in ad.split('\n'):
+        if(line.startswith('Environment = ')):
+            jobEnvStr = line.split('Environment = ', 1)[1]
+            jobEnvStr = jobEnvStr.strip()
+            jobEnvStr = jobEnvStr[1:-1]
+    
     # Replace ' ' with a placeholder.
     jobEnvStr = jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
     tokens = jobEnvStr.split()
@@ -49,13 +54,6 @@ def getOwlEnvironment(job):
         if(key.startswith('OWL')):
             env[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
     return(env)
-
-
-
-def getJob(stream=sys.stdin):
-    from owl.job import Job
-    
-    return(Job.newFromClassAd(stream.read()))
 
 
 
@@ -84,9 +82,13 @@ def setupLogger(name):
 
 
 
-def createBlackboardEntry(job):
+def createBlackboardEntry(ad):
+    from owl.job import Job
     from owl import blackboard
     
+    
+    # Create a Job instance from the ClassAd.
+    job = Job.newFromClassAd(ad)
     
     # Now, we could be in a rescue DAG, meaning that the blackboard entry might 
     # already be there. If this is the case, we just update that entry and not 
@@ -113,20 +115,24 @@ if(__name__ == '__main__'):
     logger = setupLogger('prepare_job')
     
     # Read the raw ClassAd from STDIN and create a Job instance.
-    logger.debug("Parsing STDIN to create a Job instance.")    
-    job = getJob(sys.stdin)
-    logger.debug("Created job instance.")
+    logger.debug("Parsing STDIN.")    
+    ad = sys.stdin.read()
     
     # Agument the (very restricted) environment with OWL specific variables defined
     # in job.Environment (if any).
-    owlEnv = getOwlEnvironment(job)
+    owlEnv = getOwlEnvironment(ad)
     for k in owlEnv.keys():
-        os.environ[k] = owlEnv[k]
+        v = owlEnv[k]
+        logger.debug('Adding ENV(%s) = %s' % (k, v))
+        os.environ[k] = v
+    
+    from owl.config import *
+    logger.debug('OWL DATABASE_CONNECTION_STR = %s' % (DATABASE_CONNECTION_STR))
     
     # Now create (or uodate if already there) a Blackboard entry for job.
     logger.debug('Upodating the blackboard.')
     try:
-        createBlackboardEntry(job)
+        createBlackboardEntry(ad)
     except:
         logger.exception('Error updating the database.')
     else:
