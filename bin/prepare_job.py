@@ -33,6 +33,7 @@ import sys
 
 
 
+
 def getOwlEnvironment(job):
     env = {}
     try:
@@ -51,80 +52,86 @@ def getOwlEnvironment(job):
 
 
 
-
-# Get the path to the GRID-provided temp directory.
-tmpPath = '/tmp'
-for k in ('TMP', 'TMPDIR', 'TEMP'):
-    if(os.environ.has_key(k)):
-        tmpPath = os.environ[k]
-        break
-
-# Constants
-logName = 'prepare_job-' + os.environ.get('USER', 'UNKNOWN') + '.log'
-LOG_FILE_NAME = os.path.join(tmpPath, logName)
-LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-LOG_LEVEL = logging.DEBUG
+def getJob(stream=sys.stdin):
+    from owl.job import Job
+    
+    return(Job.newFromClassAd(stream.read()))
 
 
 
-# Configure logging.
-logger = logging.getLogger('prepare_job')
-logger.setLevel(LOG_LEVEL)
-fh = logging.FileHandler(LOG_FILE_NAME)
-fh.setLevel(logging.DEBUG)
-formatter = logging.Formatter(LOG_FORMAT)
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-
-# Read the raw ClassAd from STDIN
-logger.debug("Reading STDIN.")
-ad = sys.stdin.read()
-logger.debug("Read STDIN.")
-
-# Agument the (very restricted) environment with OWL specific variables defined
-# in ad.Environment (if any).
-owlEnv = getOwlEnvironment(ad)
-for k in owlEnv.keys():
-    os.environ[k] = owlEnv[k]
-
-
-from owl import blackboard
-from owl import job
-
-
-# Create a Job instance
-logger.debug("Creating job instance.")
-j = job.Job.newFromClassAd(ad)
-logger.debug("Created job instance.")
+def setupLogger(name):
+    # Get the path to the GRID-provided temp directory.
+    tmpPath = '/tmp'
+    for k in ('TMP', 'TMPDIR', 'TEMP'):
+        if(os.environ.has_key(k)):
+            tmpPath = os.environ[k]
+            break
+    
+    # Constants
+    logName = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
+    LOG_FILE_NAME = os.path.join(tmpPath, logName)
+    LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    LOG_LEVEL = logging.DEBUG
+    
+    # Configure logging.
+    logger = logging.getLogger(name)
+    logger.setLevel(LOG_LEVEL)
+    fh = logging.FileHandler(LOG_FILE_NAME)
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(LOG_FORMAT)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    return(logger)
 
 
-# Now, we could be in a rescue DAG, meaning that the blackboard entry might 
-# already be there. If this is the case, we just update that entry and not 
-# create a new one.
-entry = None
-try:
-    entry = blackboard.getEntry(entryId=j.GlobalJobId)
-except:
-    pass
 
-if(entry):
-    # Tell the Blackboard that we have a new Job starting up.
-    logger.debug("Updating database (existing entry).")
+def createBlackboardEntry(job):
+    from owl import blackboard
+    
+    
+    # Now, we could be in a rescue DAG, meaning that the blackboard entry might 
+    # already be there. If this is the case, we just update that entry and not 
+    # create a new one.
+    entry = None
     try:
-        blackboard.updateEntry(j)
+        entry = blackboard.getEntry(entryId=job.GlobalJobId)
+    except:
+        pass
+    
+    if(entry):
+        # Tell the Blackboard that we have a new Job starting up.
+        blackboard.updateEntry(job)
+    else:
+        # Tell the Blackboard that we have a new Job starting up.
+        blackboard.createEntry(job)
+    return
+
+
+
+
+
+if(__name__ == '__main__'):
+    logger = setupLogger('prepare_job')
+    
+    # Read the raw ClassAd from STDIN and create a Job instance.
+    logger.debug("Parsing STDIN to create a Job instance.")
+    job = getJob(sys.stdin)
+    logger.debug("Created job instance.")
+    
+    # Agument the (very restricted) environment with OWL specific variables defined
+    # in job.Environment (if any).
+    owlEnv = getOwlEnvironment(job)
+    for k in owlEnv.keys():
+        os.environ[k] = owlEnv[k]
+    
+    # Now create (or uodate if already there) a Blackboard entry for job.
+    logger.deug('Upodating the blackboard.')
+    try:
+        createBlackboardEntry(job)
     except:
         logger.exception('Error updating the database.')
     else:
-        logger.debug("Updated database.")
-else:
-    # Tell the Blackboard that we have a new Job starting up.
-    logger.debug("Updating database (new entry).")
-    try:
-        blackboard.createEntry(j)
-    except:
-        logger.exception('Error updating the database.')
-    else:
-        logger.debug("Updated database.")
-
-# Just exit.
-sys.exit(0)
+        logger.debug('Update done.')
+        
+    # Just exit.
+    sys.exit(0)
