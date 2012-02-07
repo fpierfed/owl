@@ -31,8 +31,24 @@ import logging
 import os
 import sys
 
-from owl import blackboard
-from owl import job
+
+
+def getOwlEnvironment(job):
+    env = {}
+    try:
+        jobEnvStr = job.Environment
+    except:
+        jobEnvStr = ''
+    # Replace ' ' with a placeholder.
+    jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
+    tokens = jobEnvStr.split()
+    for token in tokens:
+        # If this fails is because we have screwed up badly and we need to know.
+        key, val = token.split('=', 1)
+        if(key.startswith('OWL')):
+            env[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
+    return(env)
+
 
 
 
@@ -65,10 +81,22 @@ logger.debug("Reading STDIN.")
 ad = sys.stdin.read()
 logger.debug("Read STDIN.")
 
+# Agument the (very restricted) environment with OWL specific variables defined
+# in ad.Environment (if any).
+owlEnv = getOwlEnvironment(ad)
+for k in owlEnv.keys():
+    os.environ[k] = owlEnv[k]
+
+
+from owl import blackboard
+from owl import job
+
+
 # Create a Job instance
 logger.debug("Creating job instance.")
 j = job.Job.newFromClassAd(ad)
 logger.debug("Created job instance.")
+
 
 # Now, we could be in a rescue DAG, meaning that the blackboard entry might 
 # already be there. If this is the case, we just update that entry and not 

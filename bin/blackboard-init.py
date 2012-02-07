@@ -30,13 +30,13 @@
 
 import elixir
 
+from owl.config import DATABASE_CONNECTION_STR
 from owl.blackboard import *
 
 
 
-
-if(__name__ == '__main__'):
-    # Init the blackboard database.
-    # FIXME: Get database connection info from a config file.
-    elixir.setup_all()
-    elixir.create_all()
+# Init the blackboard database.
+elixir.metadata.bind = DATABASE_CONNECTION_STR
+elixir.metadata.bind.echo = False
+elixir.setup_all()
+elixir.create_all()

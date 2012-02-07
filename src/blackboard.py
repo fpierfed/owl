@@ -158,13 +158,6 @@ from config import DATABASE_CONNECTION_STR
 
 
 
-# Define the database connection.
-elixir.metadata.bind = DATABASE_CONNECTION_STR
-elixir.metadata.bind.echo = False
-
-
-
-
 # Classes/Tables.
 class Blackboard(elixir.Entity):
     elixir.using_options(tablename='blackboard')
@@ -331,6 +324,9 @@ def createEntry(job):
     Insert the corresponding Blackboard entry in the database. Derive the 
     Dataset name form the job.Arguments string, if job.Dataset is not defined.
     """
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
     elixir.setup_all()
     
     # Fix timestamps and dataset name.
@@ -347,6 +343,9 @@ def updateEntry(job):
     """
     Fetch the existing entry for job and update it.
     """
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
     elixir.setup_all()
     
     # Fix timestamps.
@@ -378,6 +377,9 @@ def listEntries(owner=None, dataset=None):
     """
     List all known Blackboard entries and return them to the caller.
     """
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
     elixir.setup_all()
     
     query = Blackboard.query
@@ -392,6 +394,9 @@ def getEntry(entryId):
     """
     Retrieve a single blackboard entry given its GlobalJobId.
     """
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
     elixir.setup_all()
     
     query = Blackboard.query.filter_by(GlobalJobId=entryId)
@@ -404,8 +409,12 @@ def getOSFEntry(dagManJobId):
     associated with that DAG and present them in an OSF-like manner:
         Dataset, Owner, DAGManJobId, [Nodei JobState, Nodei ExitCode, ]
     """
-    osfEntries = []
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
     elixir.setup_all()
+    
+    osfEntries = []
     
     # Get all the relevant entries, grouped by their DAGManJobId.
     if(not dagManJobId):
