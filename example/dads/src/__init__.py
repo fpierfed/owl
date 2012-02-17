@@ -55,7 +55,7 @@ class Connection(object):
             n = netrc.netrc()
             self.stsci_userid, account, self.stsci_password = n.authenticators(self.stsci_ftphost)
         except:
-            self.stsci_userid, account, self.stsci_password = accounts[self.stsci_ftphost]
+            self.stsci_userid, account, self.stsci_password = default_account
         
         self.waitperiods = (15,15,30,60,60,60,60,120,120,120,120,240,120,240,360,600,1200,2400,999)
         return
