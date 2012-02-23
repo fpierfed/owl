@@ -80,7 +80,7 @@ class Workflow(object):
     
     
     def execute(self, codeRoot, repository, dataset, workDir=None, 
-                flavour='condor', extraEnvironment={}):
+                flavour='condor', extraEnvironment={}, wait=False):
         # Get any extra keyword we might need for our templates.
         extraKw = self.getExtraKeywords(codeRoot, repository, dataset, workDir, 
                                          flavour, extraEnvironment)
@@ -119,7 +119,7 @@ class Workflow(object):
         dagName = root + '_' + dataset + ext
         
         # Now submit the whole workflow via DRMAA.
-        return(self._submit(dagName, workDir, flavour, extraEnvironment))
+        return(self._submit(dagName, workDir, flavour, extraEnvironment, wait))
     
     
     def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour, 
@@ -127,16 +127,25 @@ class Workflow(object):
         return({})
     
     
-    def _submit(self, dagName, workDir, flavour='condor', extraEnvironment={}):
+    def _submit(self, dagName, workDir, flavour='condor', extraEnvironment={},
+                wait=False):
         """
-        Simply delegate the work to the appropriate plugin.
+        Simply delegate the work to the appropriate plugin. If wait==True and
+        flavour=='condor', wait for the job to complete and return its exit code
+        as well as its id.
         """
+        if(flavour != 'condor'):
+            wait = False
+        
         # If we are asked to (by specifying extraEnvironment) agument the user 
         # environment.
         if(extraEnvironment):
             os.environ.update(extraEnvironment)
         
         plugin = getattr(plugins, flavour)
+        
+        if(wait):
+            return(plugin.submit(dagName, workDir, wait=True))
         return(plugin.submit(dagName, workDir))
 
 

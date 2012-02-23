@@ -41,7 +41,6 @@ from owl.utils import which
 # Constants
 NATIVE_SPEC_TMPL = jinja2.Template('''\
 universe        = scheduler
-log             = {{ dag_name }}.dagman.log
 remove_kill_sig = SIGUSR1
 getenv          = True
 on_exit_remove	= ( ExitSignal =?= 11 || (ExitCode =!= UNDEFINED && ExitCode >=0 && ExitCode <= 2))
@@ -60,8 +59,6 @@ def createJobTemplate(drmaaSession, dagName, workDir):
     
     ad = drmaaSession.createJobTemplate()
     ad.remoteCommand = dagMan
-    ad.jobEnvironment = {'_CONDOR_DAGMAN_LOG': '%s.dagman.out' % (dagName),
-                         '_CONDOR_MAX_DAGMAN_LOG': 0}
     ad.workingDirectory = workDir
     ad.nativeSpecification = NATIVE_SPEC_TMPL.render(dag_name=dagName)
     ad.blockEmail = True
@@ -72,10 +69,18 @@ def createJobTemplate(drmaaSession, dagName, workDir):
     return(ad)
 
 
-def submit(dagName, workDir):
+def submit(dagName, workDir, wait=False):
     """
-    Create a DRMAA session and submit the DAGMan job within it.
+    Create a DRMAA session and submit the DAGMan job within it. If wait=False, 
+    submit the job asyncronously. Otherwise, wait for the job to complete and
+    return its exit code as well.
+    
+    Return
+        jobId                   if wait == False
+        (jobId, exit_code)      if wait == True
     """
+    # TODO: homogenize the return type.
+    
     # Start the DRMAA session.
     session = drmaa.Session()
     session.initialize()
@@ -86,6 +91,14 @@ def submit(dagName, workDir):
     # Submit the job.
     jobId = session.runJob(ad)
     
+    # Wait?
+    if(wait):
+        try:
+            err = session.wait(jobId, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+        except drmaa.errors.InvalidArgumentException:
+            # This is due to the fact that Condor drmaa 1.6 set stat=200 when
+            # exit code = 0 (see WISDOM file in drmaa-1.6).
+            err = 0
     # Cleanup.
     session.deleteJobTemplate(ad)
     
@@ -98,4 +111,10 @@ def submit(dagName, workDir):
     # The database version of this id appends #<timestamp> to what we have here
     # as well as replacing the hostname with the fully qualified host name.
     hostname, clusterId, jobId = jobId.rsplit('.', 2)
-    return('%s#%s.%s' % (hostname, clusterId, jobId))
+    sanitizedId = '%s#%s.%s' % (hostname, clusterId, jobId)
+    if(wait):
+        return((sanitizedId, err))
+    return(sanitizedId)
+
+
+
