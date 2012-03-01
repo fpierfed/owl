@@ -22,6 +22,7 @@ DATASET_INSTRUMENT = {'i': 'WFPC3',
                       'z': 'GHRS',
                       'f': 'FGS',
                       'v': 'HSP'}
+SUPPORTED_INSTRUYMENTS = ('ACS', )
 
 
 
@@ -69,6 +70,9 @@ if(__name__ == '__main__'):
                 
                 # Determine instrument type.
                 instrument = dataset_to_instrument(e.datasetName)
+                if(instrument not in SUPPORTED_INSTRUYMENTS):
+                    print('Sorry, but instrument %s is not supported yet.')
+                    continue
                 
                 # Determine whether this is an association or a simple exposure.
                 dataset_type = 'Exp'
