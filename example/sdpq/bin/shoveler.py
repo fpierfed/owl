@@ -50,13 +50,14 @@ if(__name__ == '__main__'):
     w = None
     n = 100
     sleep_time = 60.
-    REPO_ROOT = '/jwst/data/repository/raw'
+    REPO_ROOT = getattr(config, 'DIRECTORIES_REPOSITORY', 
+                                '/jwst/data/repository/raw')
     # Workflow classes are named
     #   uppercase(<instrument>)AsnWorkflow or
     #   uppercase(<instrument>)ExpWorkflow or
     W_TEMPLATE = '%(inst)s%(typ)sWorkflow'
     TEMPLATE_ROOT = os.path.join(os.path.dirname(sdpq.__file__), 'templates')
-    CODE_ROOT = '/jwst'
+    CODE_ROOT = getattr(config, 'DIRECTORIES_PIPELINE_ROOT', '/jwst')
     try:
         while(True):
             entries = sdpq.pop(limit=100)
@@ -73,6 +74,11 @@ if(__name__ == '__main__'):
                 dataset_type = 'Exp'
                 if(is_association(instrument, e.datasetName)):
                     dataset_type = 'Asn'
+                
+                # Make sure that the dataset exists in the repository.
+                if(not os.path.isdir(os.path.join(REPO_ROOT, 
+                                                  e.datasetName.lower()))):
+                    print('Dataset name not present in repository %s.')
                 
                 # Create a simple work directory path: workRoot/<user>_<timestamp>
                 dir_name = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), 
