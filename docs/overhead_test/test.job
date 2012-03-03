@@ -1,0 +1,20 @@
+Executable              = /home/fpierfed/overhead_test/test.py
+Arguments               = 30
+Output                  = test.out
+Error                   = test.err
+
+Universe                = vanilla
+Log                     = test.log
++InputDataset           = "test"
+
+Should_Transfer_Files   = IF_NEEDED
+When_to_Transfer_Output = ON_EXIT
+
+# +HookKeyword            = "FOO"
++Instances              = 1
+
+getenv                  = True
+
+Notification            = Never
+Queue 300
+
