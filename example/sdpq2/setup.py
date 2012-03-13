@@ -46,7 +46,7 @@ if __name__ == "__main__":
           version='2.0',
           
           scripts=SCRIPTS,
-          packages=['sdpq2', ],
+          packages=['sdpq2', 'sdpq2.plugins', ],
           package_dir={'sdpq2': 'src'},
 )
 
