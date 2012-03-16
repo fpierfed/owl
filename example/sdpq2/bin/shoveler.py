@@ -18,7 +18,7 @@ class PluginRuntimeError(Exception): pass
 
 
 
-def process_element(element):
+def process_element(element, plugins):
     """
     Process a queue element.
     """
@@ -59,7 +59,7 @@ def main(n, sleep_time):
         entries = sdpq2.pop(limit=n)
         for e in entries:
             try:
-                _id, _err = process_element(e)
+                _id, _err = process_element(e, plugins)
             except NotImplementedError as exception:
                 print(exception.message)
             except InvalidPlugin as exception:
