@@ -28,33 +28,34 @@
 # DAMAGE.
 
 # 
-# owl configuration file
+# OWL configuration file
 # 
-# owl looks for its configuration file in these locations (in order):
-#   $OWL_CONFIG_DIR/owlrc
-#   $HOME/.owlrc
+# OWL looks for its configuration file in these locations (in order):
 #   /etc/owlrc
 #   <owl install dir>/etc/owlrc
 # 
 [Database]
 # SQLAlchemy supported databases
-flavour = postgres
+flavour = sqlite
 # Database host
-host = localhost
+host = 
 # Database port
 # port =
 # Database reader user password
-password = zxcvbnm
+password = 
 # Database reader user
-user = www
+user = 
 # Name of he database to use
-database = foo
+database = /jwst/data/owl.sqlite
 
 [Directories]
 # Where to find the pipeline code (for the Grid sake).
-pipeline_root = /hstdev/project/condor_bcw/bcw/python
+pipeline_root = /jwst
 # Path to the work directory.
-work_root = /hstdev/project/condor_bcw/work
+work_root = /jwst/data/work
+# Default raw data repository.
+repository = /jwst/data/repository/raw
+
 
 
 
