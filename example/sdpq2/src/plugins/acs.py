@@ -74,6 +74,7 @@ def process(entry):
     # already.
     if(os.path.exists(dst_dir)):
         return((None, 0))
+    os.makedirs(dst_dir)
     
     args = [which('PodBayDoors.py'), entry.datasetName]
     proc = subprocess.Popen(args, shell=False)
