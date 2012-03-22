@@ -23,7 +23,8 @@ ENV = {'OPUS_DB_SERVER': 'HARPOSQLA',
        'ARCHIVE_USER': 'anonymous', 
        'ARCHIVE_PASS': 'anonymous@stsci.edu', 
        'SDPQ_DB_SERVER': 'dummy',
-       'SDPQ_DB': 'dummy'}
+       'SDPQ_DB': 'dummy',
+       'ACAREA': '/usr/local/sybase/stbin'}
 
 
 
@@ -36,7 +37,7 @@ def _setup_environment(datasetName):
     $DELIVERY_DIR, which is always set to 
         owl.config.DIRECTORIES_REPOSITORY/datasetName.
     """
-    defined = os.environ.key()
+    defined = os.environ.keys()
     for k, v in [(ky, vl) for (ky, vl) in ENV.items() \
                  if ky not in defined and ky != 'DELIVERY_DIR']:
         os.environ[k] = v
@@ -65,7 +66,7 @@ def process(entry):
     # variable that we do override.
     repo_dir = os.path.realpath(DIRECTORIES_REPOSITORY)
     dst_dir = os.path.join(repo_dir, entry.datasetName)
-    if(os.path.isdir(repo_dir)):
+    if(not os.path.isdir(repo_dir)):
         os.makedirs(repo_dir)
     
     # Now is dst_dir exists, we have to choose what to do. We chose not to 
