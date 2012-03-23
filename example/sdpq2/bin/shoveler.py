@@ -50,6 +50,7 @@ def main(n, sleep_time):
     sh = SignalHandler()
     signal.signal(signal.SIGUSR1, sh.handle)
     
+    skip = []
     while(True):
         # Did we get a signal and have to restart?
         if(sh.got_signal):
@@ -58,10 +59,14 @@ def main(n, sleep_time):
         # Fetch entries from SDPQ.
         entries = sdpq2.pop(limit=n)
         for e in entries:
+            if(e.datasetName in skip):
+                continue
+            
             try:
                 _id, _err = process_element(e, plugins)
             except NotImplementedError as exception:
                 print(exception.message)
+                skip.append(e.datasetName)
                 continue
             except InvalidPlugin as exception:
                 print(exception.message)
@@ -69,6 +74,7 @@ def main(n, sleep_time):
             except PluginRuntimeError as exception:
                 # FIXME: what to do in this case?
                 print(exception.message)
+                skip.append(e.datasetName)
                 continue
             
             # We have a case where _id is None but err == 0. In these cases we
