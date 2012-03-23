@@ -62,11 +62,14 @@ def main(n, sleep_time):
                 _id, _err = process_element(e, plugins)
             except NotImplementedError as exception:
                 print(exception.message)
+                continue
             except InvalidPlugin as exception:
                 print(exception.message)
+                continue
             except PluginRuntimeError as exception:
                 # FIXME: what to do in this case?
                 print(exception.message)
+                continue
             
             # We have a case where _id is None but err == 0. In these cases we
             # have not submitted a workflow yet but it is OK (temporarily so).
