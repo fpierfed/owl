@@ -4,7 +4,7 @@ import os
 
 import elixir
 
-from sdpq import *
+from sdpq2 import *
 
 
 
@@ -27,12 +27,12 @@ if(__name__ == '__main__'):
         e.shoveledDate = None
         e.workflowId = None
     else:
-        e = SDPQ(datasetName=unicode(dataset),
-                 insertDate=datetime.datetime.now(),
-                 priority=1,
-                 shoveledDate=None,
-                 workflowId=None,
-                 wasReprioritized=0)
+        e = SdpQueue(datasetName=unicode(dataset),
+                     insertDate=datetime.datetime.now(),
+                     priority=1,
+                     shoveledDate=None,
+                     workflowId=None,
+                     wasReprioritized=0)
     elixir.session.commit()
 
 
