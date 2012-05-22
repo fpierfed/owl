@@ -57,9 +57,14 @@ names = (os.path.join('/etc', 'owlrc'),
                       'etc', 'owlrc'))
 for name in names:
     if(os.path.exists(name)):
+        # remember the name of the config file we used; for outsiders to examine
+        config_name = name  # remek
+
+        # load the config
         config = ConfigParser.RawConfigParser(defaults={'port': -1})
         config.read(name)
         break
+
 if(not config):
     raise(Exception('No configuration file found in any of %s' % (str(names))))
 
@@ -90,3 +95,6 @@ DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
                                                   DATABASE_HOST,
                                                   DATABASE_PORT,
                                                   DATABASE_DATABASE))
+
+if __name__ == '__main__' :
+    print config_name

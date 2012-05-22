@@ -1,11 +1,27 @@
 Installing OWL as a developer
 --
 
-With virtualenv
---
-
+	# this creates a virtualenv named "OWL"
 	virtualenv --distribute OWL
-	cd OWL; source bin/activate
-	pip install -r <path to>/requirements.txt
-	$EDITOR lib/python*/site-packages/owl/etc/owlrc
+
+	# this puts the virtualenv on your path
+	# sh:
+		cd OWL
+		. bin/activate
+
+	# csh:
+		cd OWL
+		source bin/activate.csh
+
+	# go to your owl source code
+	cd .../owl
+
+	# install the third party software that is required
+	pip install -r developer_requirements.txt
+
+	# install OWL
+	python setup.py install
+
+	# edit the config file
+	$EDITOR ` python -m owl.config `
 
