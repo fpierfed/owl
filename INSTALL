@@ -1,0 +1,11 @@
+Installing OWL as a developer
+--
+
+With virtualenv
+--
+
+	virtualenv --distribute OWL
+	cd OWL; source bin/activate
+	pip install -r <path to>/requirements.txt
+	$EDITOR lib/python*/site-packages/owl/etc/owlrc
+
