@@ -304,7 +304,7 @@ class Daemon(object):
             [resource name, ...]
         """
         ads = condor.condor_status()
-        return([ad.Name for as in ads])
+        return([ad.Name for ad in ads])
 
     def owlapi_resources_get_info(self, name):
         """
