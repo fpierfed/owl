@@ -132,10 +132,18 @@ class ClassAd(object):
         map(lambda (k, v): setattr(self, k, v), kw.items())
 
         # Just to be consistent, if JobState is undefined or None, set it to
-        # 'Starting'.
-        if('JobState' not in kw.keys() or not kw['JobState']):
+        # 'Starting'. Just do this if self.MyType is Job
+        if(self.MyType == 'Job' and
+           (JobState not in kw.keys() or not kw['JobState'])):
             self.JobState = unicode('Starting')
         return
+
+    def todict(self):
+        """
+        Convert to a simple dictionary.
+        """
+        return(self.__dict__)
+
 
 
 class Job(ClassAd):

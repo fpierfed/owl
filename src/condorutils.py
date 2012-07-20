@@ -150,7 +150,7 @@ def condor_status(machine_name=None, timeout=TIMEOUT):
     machine.
 
     Return
-        (dict(*classad), )
+        [classad, ...]
     """
     machines = ({'Name':
                  'Error communicating with condor please try again later.'}, )
