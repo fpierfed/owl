@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # Copyright (C) 2010 Association of Universities for Research in Astronomy(AURA)
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     1. Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
-# 
+#
 #     2. Redistributions in binary form must reproduce the above
 #       copyright notice, this list of conditions and the following
 #       disclaimer in the documentation and/or other materials provided
 #       with the distribution.
-# 
+#
 #     3. The name of AURA and its representatives may not be used to
 #       endorse or promote products derived from this software without
 #       specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY AURA ``AS IS'' AND ANY EXPRESS OR IMPLIED
 # WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -152,7 +152,7 @@ import urllib
 import elixir
 from sqlalchemy import desc
 
-from job import Job
+from classad import Job
 from config import DATABASE_CONNECTION_STR
 
 
@@ -161,7 +161,7 @@ from config import DATABASE_CONNECTION_STR
 # Classes/Tables.
 class Blackboard(elixir.Entity):
     elixir.using_options(tablename='blackboard')
-    
+
     MyType = elixir.Field(elixir.Unicode(255))
     TargetType = elixir.Field(elixir.Unicode(255))
     GlobalJobId = elixir.Field(elixir.Unicode(255), primary_key=True)
@@ -293,7 +293,7 @@ def _extractDatasetName(job):
     """
     if(hasattr(job, 'InputDataset')):
         return(getattr(job, 'InputDataset'))
-    
+
     args = job.Arguments.split()
     for i in range(len(args)):
         if(args[i] == '-i'):
@@ -310,7 +310,7 @@ def _convertTimeStamps(job):
                   'ShadowBday', 'JobStartDate', 'JobCurrentStartDate', 'QDate',
                   'CompletionDate', 'CommittedTime', 'LastJobLeaseRenewal',
                   'LastRejMatchTime')
-    
+
     for fieldName in fieldNames:
         if(hasattr(job, fieldName)):
             utc = datetime.datetime.utcfromtimestamp(getattr(job, fieldName))
@@ -321,19 +321,19 @@ def _convertTimeStamps(job):
 
 def createEntry(job):
     """
-    Insert the corresponding Blackboard entry in the database. Derive the 
+    Insert the corresponding Blackboard entry in the database. Derive the
     Dataset name form the job.Arguments string, if job.Dataset is not defined.
     """
     # Define the database connection.
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
-    
+
     # Fix timestamps and dataset name.
     _convertTimeStamps(job)
     job.Dataset = _extractDatasetName(job)
     attrs = job.__dict__
-    
+
     entry = Blackboard(**attrs)
     elixir.session.commit()
     return
@@ -347,10 +347,10 @@ def updateEntry(job):
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
-    
+
     # Fix timestamps.
     _convertTimeStamps(job)
-    
+
     # Update the old entry. Remember that the information on the number of job
     # instances is only available to the prepare_job hook. This means that we
     # should not update entry.Instances.
@@ -360,11 +360,11 @@ def updateEntry(job):
         if(attr == "Instances"):
             # Never update Instances.
             continue
-        
+
         if(not hasattr(entry, attr)):
             # Not in our data model: move on.
             continue
-        
+
         if(getattr(job, attr) != getattr(entry, attr)):
             setattr(entry, attr, getattr(job, attr))
             modified += 1
@@ -381,7 +381,7 @@ def listEntries(owner=None, dataset=None):
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
-    
+
     query = Blackboard.query
     if(dataset):
         query = query.filter_by(Dataset=dataset)
@@ -398,7 +398,7 @@ def getEntry(entryId):
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
-    
+
     query = Blackboard.query.filter_by(GlobalJobId=entryId)
     return(query.one())
 
@@ -413,16 +413,16 @@ def getOSFEntry(dagManJobId):
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
-    
+
     osfEntries = []
-    
+
     # Get all the relevant entries, grouped by their DAGManJobId.
     if(not dagManJobId):
         return
-    
+
     query = Blackboard.query.filter_by(DAGManJobId=dagManJobId)
     entries = query.order_by(Blackboard.ClusterId, Blackboard.ProcId).all()
-    
+
     # Now build the OSF-like entry.
     osfEntry = (entries[0].Dataset,
                 entries[0].Owner,

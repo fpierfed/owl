@@ -34,7 +34,7 @@ import subprocess
 import tempfile
 import time
 
-from owl import job
+from owl.classad import ClassAd
 from owl.utils import which
 
 
@@ -59,13 +59,13 @@ def _parse_machine_classad(stdout):
     for line in stdout:
         if(line.strip() == '' and ad):
             # New ClassAd: parse the last one and start a new one.
-            machines.append(job.Job.newFromClassAd(ad))
+            machines.append(ClassAd.newFromClassAd(ad))
             ad = ''
             continue
         ad += line
     # The file ended and hence we must have a last ClassAd: parse it and quit.
     if(ad):
-        machines.append(job.Job.newFromClassAd(ad))
+        machines.append(ClassAd.newFromClassAd(ad))
     return(machines)
 
 

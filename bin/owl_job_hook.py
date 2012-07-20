@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # Copyright (C) 2010 Association of Universities for Research in Astronomy(AURA)
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #     1. Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
-# 
+#
 #     2. Redistributions in binary form must reproduce the above
 #       copyright notice, this list of conditions and the following
 #       disclaimer in the documentation and/or other materials provided
 #       with the distribution.
-# 
+#
 #     3. The name of AURA and its representatives may not be used to
 #       endorse or promote products derived from this software without
 #       specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY AURA ``AS IS'' AND ANY EXPRESS OR IMPLIED
 # WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,12 +33,12 @@ This is a single-entry OWL blackboard management Condor Job Hook.
 It is assumed that the reader is familiar with Condor and the Job Hook mechanics
 (described in section 4.4 of the Condor manual).
 
-Instead of defining three different scripts for the 'Prepare Job', 'Update Job 
-Info' and 'Job Exit' Starter Hooks, we only have this one. Differentiating 
+Instead of defining three different scripts for the 'Prepare Job', 'Update Job
+Info' and 'Job Exit' Starter Hooks, we only have this one. Differentiating
 between the three roles is done by noting that a 'Job Exit' Hook is the only one
 which is passed arguments on the command-line. In addition, ClassAds passed as
 STDIN to 'Prepare Job' Hooks lack these attributes: JobState, JobPid, NumPids,
-JobStartDate, RemoteSysCpu, RemoteUserCpu and ImageSize. OWL does add JobState 
+JobStartDate, RemoteSysCpu, RemoteUserCpu and ImageSize. OWL does add JobState
 if not present and sets it to 'Starting'.
 """
 import logging
@@ -50,7 +50,7 @@ import sys
 
 def getOwlEnvironment(ad):
     env = {}
-    
+
     # Find the Environment = ... line.
     jobEnvStr = ''
     for line in ad.split('\n'):
@@ -58,7 +58,7 @@ def getOwlEnvironment(ad):
             jobEnvStr = line.split('Environment = ', 1)[1]
             jobEnvStr = jobEnvStr.strip()
             jobEnvStr = jobEnvStr[1:-1]
-    
+
     # Replace ' ' with a placeholder.
     jobEnvStr = jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
     tokens = jobEnvStr.split()
@@ -78,12 +78,12 @@ def setupLogger(name):
         if(os.environ.has_key(k)):
             tmpPath = os.environ[k]
             break
-    
+
     logName = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
     LOG_FILE_NAME = os.path.join(tmpPath, logName)
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_LEVEL = logging.DEBUG
-    
+
     # Configure logging.
     logger = logging.getLogger(name)
     logger.setLevel(LOG_LEVEL)
@@ -97,22 +97,22 @@ def setupLogger(name):
 
 
 def createOrUpdateBlackboardEntry(ad):
-    from owl.job import Job
+    from owl.classad import Job
     from owl import blackboard
-    
-    
+
+
     # Create a Job instance from the ClassAd.
     job = Job.newFromClassAd(ad)
-    
-    # Now, we could be in a rescue DAG, meaning that the blackboard entry might 
-    # already be there. If this is the case, we just update that entry and not 
+
+    # Now, we could be in a rescue DAG, meaning that the blackboard entry might
+    # already be there. If this is the case, we just update that entry and not
     # create a new one.
     entry = None
     try:
         entry = blackboard.getEntry(entryId=job.GlobalJobId)
     except:
         pass
-    
+
     if(entry):
         # Tell the Blackboard that we have a new Job starting up.
         blackboard.updateEntry(job)
@@ -123,13 +123,13 @@ def createOrUpdateBlackboardEntry(ad):
 
 
 def closeBlackboardEntry(ad):
-    from owl.job import Job
+    from owl.classad import Job
     from owl import blackboard
-    
-    
+
+
     # Create a Job instance from the ClassAd.
     job = Job.newFromClassAd(ad)
-    
+
     # Close the Blackboard entry corresponding to job.
     blackboard.closeEntry(job)
     return
@@ -139,17 +139,17 @@ def closeBlackboardEntry(ad):
 
 
 if(__name__ == '__main__'):
-    EXTRA_ATTRS = ('JobState', 'JobPid', 'NumPids', 'JobStartDate', 
+    EXTRA_ATTRS = ('JobState', 'JobPid', 'NumPids', 'JobStartDate',
                    'RemoteSysCpu', 'RemoteUserCpu', 'ImageSize')
-    
-    
+
+
     # Setup logging.
     logger = setupLogger('owl_blackboard_hooks')
-    
+
     # Read the raw ClassAd from STDIN and create a Job instance.
-    logger.debug("Parsing STDIN.")    
+    logger.debug("Parsing STDIN.")
     ad = sys.stdin.read()
-    
+
     # Determine the role of this hook.
     role = None
     if(len(sys.argv) > 1):
@@ -166,26 +166,26 @@ if(__name__ == '__main__'):
         else:
             role = 'prepare_job'
     logger.debug('Script invoked as %s hook.' % (role))
-    
-    # Agument the (very restricted) environment with OWL specific variables 
+
+    # Agument the (very restricted) environment with OWL specific variables
     # defined in the job/ClassAd Environment (if any).
     owlEnv = getOwlEnvironment(ad)
     for k in owlEnv.keys():
         v = owlEnv[k]
         logger.debug('Adding ENV(%s) = %s' % (k, v))
         os.environ[k] = v
-    
+
     from owl.config import *
     logger.debug('OWL DATABASE_CONNECTION_STR = %s' % (DATABASE_CONNECTION_STR))
-    
-    
+
+
     if(role == 'job_exit'):
         # Close the Blackboard entry and be happy.
         fn = closeBlackboardEntry
     else:
         # create (or uodate if already there) a Blackboard entry for job.
         fn = createOrUpdateBlackboardEntry
-    
+
     # What are you waiting for?
     logger.debug('Upodating the blackboard.')
     try:
@@ -194,6 +194,6 @@ if(__name__ == '__main__'):
         logger.exception('Error updating the database.')
     else:
         logger.debug('Update done.')
-        
+
     # Just exit.
     sys.exit(0)
