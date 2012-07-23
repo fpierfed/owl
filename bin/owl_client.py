@@ -32,10 +32,12 @@ Commands (Command Mode)
 
 """
 import json
+import time
 
 
 # Constants
 OWLD_PORT = 9999
+
 
 
 
@@ -64,12 +66,16 @@ def owl_client(argv, addr, port, verbose=False):
     sock.sendall(cmd_spec)
 
     # Now wait for the answer from the remote OWLD.
+    # res = recv(sock, 1024)
     res = ''
     while(True):
         tmp = sock.recv(1024)
         if(not tmp):
             break
         res += tmp
+
+    # Cleanup and quit.
+    sock.close()
     print(json.loads(res))
     return(0)
 
