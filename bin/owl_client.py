@@ -41,6 +41,66 @@ OWLD_PORT = 9999
 
 
 
+class Wrapper(object):
+    def __init__(self, method, name):
+        self.name = name
+        self.method = method
+        return
+
+    def __call__(self, *argv):
+        return(self.method(self.name, *argv))
+
+
+class OwlClient(object):
+    def __init__(self, addr, port=OWLD_PORT, verbose=False):
+        self.addr = addr
+        self.port = port
+        self.verbose = verbose
+        self.sock = None
+        return
+
+    def __getattr__(self, name):
+        return(Wrapper(self.execute, name))
+
+    def _connect(self):
+        # Connect to (addr, port) and send argv in JSON format.
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.connect((self.addr, self.port))
+        if(self.verbose):
+            print('Connected to %s:%d' % (self.addr, self.port))
+        return
+
+    def execute(self, *argv):
+        # Connect
+        self._connect()
+
+        # We need to send the command and its arguments as a list (i.e. the full
+        # argv list) in JSON format, new-line terminated.
+        cmd_spec = json.dumps(argv) + '\n'
+        if(self.verbose):
+            print('Sending %s' % (cmd_spec.strip()))
+
+        self.sock.sendall(cmd_spec)
+
+        # Now wait for the answer from the remote OWLD.
+        # res = recv(sock, 1024)
+        res = ''
+        while(True):
+            tmp = self.sock.recv(1024)
+            if(not tmp):
+                break
+            res += tmp
+
+        # Cleanup and quit.
+        self.sock.close()
+        return(json.loads(res))
+
+
+
+
+
+
 def owl_client(argv, addr, port, verbose=False):
     """
     Communicate with a remote OWLD listening on `addr` at `port`. The command
@@ -55,7 +115,7 @@ def owl_client(argv, addr, port, verbose=False):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.connect((addr, port))
     if(verbose):
-        print('Connecting to %s:%d' % (addr, port))
+        print('Connected to %s:%d' % (addr, port))
 
     # We need to send the command and its arguments as a list (i.e. the full
     # argv list) in JSON format, new-line terminated.
@@ -127,7 +187,12 @@ if(__name__ == '__main__'):
     if(not args):
         parser.error('Please specify a command.')
 
-    sys.exit(owl_client(addr=ipaddr, port=options.port, argv=args,
-                        verbose=options.verbose))
+    if(False):
+        sys.exit(owl_client(addr=ipaddr, port=options.port, argv=args,
+                            verbose=options.verbose))
+    else:
+        owl = OwlClient(ipaddr, options.port, verbose=options.verbose)
+        method = args.pop(0)
+        print(getattr(owl, method)(*args))
 
 
