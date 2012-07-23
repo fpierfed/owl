@@ -152,8 +152,9 @@ def condor_status(machine_name=None, timeout=TIMEOUT):
     Return
         [classad, ...]
     """
-    machines = ({'Name':
-                 'Error communicating with condor please try again later.'}, )
+    m = ClassAd(MyType='Machine',
+                Name='Error communicating with condor please try again later.')
+    machines = [m, ]
 
     # Invoke condot_status and write its output to a temp file.
     args = [which('condor_status'), '-long']
