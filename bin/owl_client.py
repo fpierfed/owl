@@ -52,35 +52,24 @@ class Wrapper(object):
 
 
 class OwlClient(object):
-    def __init__(self, addr, port=OWLD_PORT, verbose=False):
+    def __init__(self, addr, port=OWLD_PORT):
         self.addr = addr
         self.port = port
-        self.verbose = verbose
         self.sock = None
         return
 
     def __getattr__(self, name):
         return(Wrapper(self.execute, name))
 
-    def _connect(self):
+    def execute(self, *argv):
         # Connect to (addr, port) and send argv in JSON format.
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.connect((self.addr, self.port))
-        if(self.verbose):
-            print('Connected to %s:%d' % (self.addr, self.port))
-        return
-
-    def execute(self, *argv):
-        # Connect
-        self._connect()
 
         # We need to send the command and its arguments as a list (i.e. the full
         # argv list) in JSON format, new-line terminated.
         cmd_spec = json.dumps(argv) + '\n'
-        if(self.verbose):
-            print('Sending %s' % (cmd_spec.strip()))
-
         self.sock.sendall(cmd_spec)
 
         # Now wait for the answer from the remote OWLD.
@@ -191,7 +180,7 @@ if(__name__ == '__main__'):
         sys.exit(owl_client(addr=ipaddr, port=options.port, argv=args,
                             verbose=options.verbose))
     else:
-        owl = OwlClient(ipaddr, options.port, verbose=options.verbose)
+        owl = OwlClient(ipaddr, options.port)
         method = args.pop(0)
         print(getattr(owl, method)(*args))
 
