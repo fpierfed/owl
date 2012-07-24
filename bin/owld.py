@@ -316,8 +316,10 @@ class Daemon(object):
         Return
             ClassAd instance as dictionary
         """
-        ad = condor.condor_status(name)[0]
-        return(ad.todict())
+        ads = condor.condor_status(name)
+        if(not ads):
+            return
+        return(ads[0].todict())
 
 
 def new_command_id(queue):
