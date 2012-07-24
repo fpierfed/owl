@@ -40,6 +40,8 @@ import sys
 import time
 
 import owl.condorutils as condor
+from owl import blackboard
+
 
 
 # Constants
@@ -335,6 +337,33 @@ class Daemon(object):
         if(not stats):
             return
         return(stats.todict())
+
+    def owlapi_jobs_get_list(self, owner=None, dataset=None):
+        """
+        Return the list of all Blackboard entries, optionally restricting to
+        those corresponding to a given dataset (when `dataset` is not None)
+        and/or a given user (when `owner` is not None).
+
+        Usage
+            jobs_get_list(owner=None, datasset=None)
+
+        Return
+            [{GlobalJobId, DAGManJobId, Dataset, Owner, JobStartDate,
+              DAGNodeName, DAGParentNodeNames, ExitCode, JobState, JobDuration}]
+        """
+        fields = ('GlobalJobId',
+                  'DAGManJobId',
+                  'Dataset',
+                  'Owner',
+                  'JobStartDate',
+                  'DAGNodeName',
+                  'DAGParentNodeNames',
+                  'ExitCode',
+                  'JobState',
+                  'JobDuration')
+        # FIXME: Danger of using too much memory here!
+        return([dict([(f, getattr(e, f, None)) for f in fields]) \
+                for e in blackboard.listEntries(owner=owner, dataset=dataset)])
 
 
 def new_command_id(queue):
