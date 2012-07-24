@@ -365,6 +365,26 @@ class Daemon(object):
         return([dict([(f, getattr(e, f, None)) for f in fields]) \
                 for e in blackboard.listEntries(owner=owner, dataset=dataset)])
 
+    def owlapi_jobs_get_info(self, job_id):
+        """
+        Return all info about the given blackboard entry (identified by its
+        GlobalJobId `job_id`) as a Python dictionary.
+
+        Usage
+            jobs_get_info(job_id)
+
+        Return
+            the given blackboard entry as a dictionay.
+        """
+        try:
+            b = blackboard.getEntry(job_id)
+        except:
+            b = None
+        if(not b):
+            return
+        return(b.todict())
+
+
 
 def new_command_id(queue):
     """
