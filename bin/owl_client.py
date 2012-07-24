@@ -31,24 +31,15 @@ Commands (Query Mode)
 Commands (Command Mode)
 
 """
+import functools
 import json
-import time
+
 
 
 # Constants
 OWLD_PORT = 9999
 
 
-
-
-class Wrapper(object):
-    def __init__(self, method, name):
-        self.name = name
-        self.method = method
-        return
-
-    def __call__(self, *argv):
-        return(self.method(self.name, *argv))
 
 
 class OwlClient(object):
@@ -59,7 +50,7 @@ class OwlClient(object):
         return
 
     def __getattr__(self, name):
-        return(Wrapper(self.execute, name))
+        return(functools.partial(self.execute, name))
 
     def execute(self, *argv):
         # Connect to (addr, port) and send argv in JSON format.
