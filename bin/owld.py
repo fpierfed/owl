@@ -308,7 +308,7 @@ class Daemon(object):
 
     def owlapi_resources_get_info(self, name):
         """
-        Return the full ClassAd for the given resource name.
+        Return the full ClassAd for the given resource name as a dictionary.
 
         Usage
            resources_get_info(resource name)
@@ -320,6 +320,21 @@ class Daemon(object):
         if(not ads):
             return
         return(ads[0].todict())
+
+    def owlapi_resources_get_stats(self):
+        """
+        Return the full Condor Schedd statistics as a Python dictionary.
+
+        Usage
+            resources_get_stats()
+
+        Return
+            Collected statistics as a dictionary.
+        """
+        stats = condor.condor_stats()
+        if(not stats):
+            return
+        return(stats.todict())
 
 
 def new_command_id(queue):
