@@ -33,7 +33,7 @@ Commands (Command Mode)
 """
 import functools
 import json
-
+import socket
 
 
 # Constants
@@ -124,7 +124,6 @@ def owl_client(argv, addr, port, verbose=False):
 
 if(__name__ == '__main__'):
     import optparse
-    import socket
     import sys
 
 
