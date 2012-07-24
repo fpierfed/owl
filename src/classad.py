@@ -134,7 +134,7 @@ class ClassAd(object):
         # Just to be consistent, if JobState is undefined or None, set it to
         # 'Starting'. Just do this if self.MyType is Job
         if(self.MyType == 'Job' and
-           (JobState not in kw.keys() or not kw['JobState'])):
+           ('JobState' not in kw.keys() or not kw['JobState'])):
             self.JobState = unicode('Starting')
         return
 
