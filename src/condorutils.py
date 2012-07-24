@@ -47,26 +47,26 @@ TIMEOUT = 5.
 
 
 
-def _parse_machine_classad(stdout):
+def _parse_classads(stdout):
     """
-    Parse a machine ClassAd list and return an object per machine. We re-use the
-    Job class from owl since it is general enough (for now).
+    Parse a (list) of ClassAds in a single file object `stdout`. Return the list
+    of parsed ClassAd instances.
     """
-    machines = []
+    ads = []
 
     # Machine ClassAds are separated by an empty line.
     ad = ''
     for line in stdout:
         if(line.strip() == '' and ad):
             # New ClassAd: parse the last one and start a new one.
-            machines.append(ClassAd.newFromClassAd(ad))
+            ads.append(ClassAd.newFromClassAd(ad))
             ad = ''
             continue
         ad += line
     # The file ended and hence we must have a last ClassAd: parse it and quit.
     if(ad):
-        machines.append(ClassAd.newFromClassAd(ad))
-    return(machines)
+        ads.append(ClassAd.newFromClassAd(ad))
+    return(ads)
 
 
 def _run_and_get_stdout(args, timeout=TIMEOUT):
@@ -141,6 +141,21 @@ def _run(args, timeout=TIMEOUT):
     return(None)
 
 
+def _run_condor_cmd( argv, error_result, timeout=TIMEOUT):
+    """
+    Internal: execute the command specified in `argv` and either return its
+    parsed STDOUT (as list of ClassAd instances) or `error_result` in case of
+    error.
+    """
+    ads = error_result
+    stdout = _run_and_get_stdout([which(argv.pop(0)), ] + argv, timeout)
+    if(stdout is not None):
+        f = open(stdout, 'r')
+        ads = _parse_classads(f)
+        f.close()
+        os.remove(stdout)
+    return(ads)
+
 
 def condor_status(machine_name=None, timeout=TIMEOUT):
     """
@@ -156,18 +171,21 @@ def condor_status(machine_name=None, timeout=TIMEOUT):
                 Name='Error communicating with condor please try again later.')
     machines = [m, ]
 
-    # Invoke condot_status and write its output to a temp file.
     args = [which('condor_status'), '-long']
     if(machine_name):
         args.append(machine_name)
-    stdout = _run_and_get_stdout(args, timeout)
+    return(_run_condor_cmd(args, machines))
 
-    if(stdout is not None):
-        f = open(stdout, 'r')
-        machines = _parse_machine_classad(f)
-        f.close()
-        os.remove(stdout)
-    return(machines)
+
+def condor_stats(timeout=TIMEOUT):
+    """
+    Return the Condor Schedd stats as a ClassAd instance.
+    """
+    ad = ClassAd(MyType='Scheduler',
+                 Name='Error communicating with the Condor Schedd.')
+    args = [which('condor_status'), '-long', '-schedd']
+    res = _run_condor_cmd(args, [ad, ])
+    return(res[0])
 
 
 def condor_hold(job_id, timeout=TIMEOUT):
