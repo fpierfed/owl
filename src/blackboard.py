@@ -283,6 +283,9 @@ class Blackboard(elixir.Entity):
     def __repr__(self):
         return('Blackboard instance.')
 
+    def todict(self):
+        return(self.__dict__)
+
 
 
 
