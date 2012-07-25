@@ -52,11 +52,15 @@ class OwlClient(object):
     def __getattr__(self, name):
         return(functools.partial(self.execute, name))
 
-    def execute(self, *argv):
+    def execute(self, *argv, **kwds):
         # Connect to (addr, port) and send argv in JSON format.
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.connect((self.addr, self.port))
+
+        # Agument argv with the keyword arguments.
+        argv = list(argv)
+        argv.append(kwds)
 
         # We need to send the command and its arguments as a list (i.e. the full
         # argv list) in JSON format, new-line terminated.
