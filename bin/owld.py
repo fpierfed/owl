@@ -111,10 +111,10 @@ class RequestHandler(asynchat.async_chat):
 
         # Parse the JSON string and get a new ID for the command. Remember:
         # what we get from the client is a simple JSON string of the form
-        #   "[method name, arg1, arg2, ...]"
+        #   "[method name, arg1, arg2, ..., keyword_dict]"
         # Where all strings are unicode and the argument list might be empty.
         # What we put in the Command Queue is
-        #   ((method name, arg1, arg2, ...), (cmd_id, callback))
+        #   ((method name, arg1, arg2, ..., keyword_dict), (cmd_id, callback))
         # Where callback is self.replay and cmd_id is dynamically generated and
         # are for internal consumption only.
         try:
@@ -239,7 +239,7 @@ class Daemon(object):
             return
 
         # raw_cmd_spec is a tuple of the form
-        #   ((method name, arg1, arg2, ..., argN), (id, callback))
+        #   ((method name, arg1, arg2, ..., keyword_dict), (id, callback))
         # All strings are unicode.
         # We prefix method name with self.prefix as those are the only methods
         # we export to the outside world.
@@ -250,6 +250,7 @@ class Daemon(object):
             return
 
         (meth_spec, (cmd_id, callback)) = cmd_spec
+        meth_spec = list(meth_spec)
         method_name = self.prefix + meth_spec[0]
         if(not hasattr(self, method_name)):
             # TODO: We have an error but we do not close the connection?
@@ -257,7 +258,13 @@ class Daemon(object):
                      % (str(meth_spec[0])))
             return
 
-        result = getattr(self, method_name)(*meth_spec[1:])
+        # Do we have keyword arguments or just positional args?
+        kwds = {}
+        if(isinstance(meth_spec[-1], dict)):
+            # Yes!
+            kwds = meth_spec.pop()
+
+        result = getattr(self, method_name)(*meth_spec[1:], **kwds)
         callback(str(result))
         return
 
@@ -338,14 +345,23 @@ class Daemon(object):
             return
         return(stats.todict())
 
-    def owlapi_jobs_get_list(self, owner=None, dataset=None):
+    def owlapi_jobs_get_list(self, owner=None, dataset=None,
+                             offset=None, limit=20):
         """
         Return the list of all Blackboard entries, optionally restricting to
         those corresponding to a given dataset (when `dataset` is not None)
-        and/or a given user (when `owner` is not None).
+        and/or a given user (when `owner` is not None). Pagination is performed
+        using `limit` and `offset` (and is disabled by default).
+        `offset` can be either None (default) or a positive integer. If `offset`
+        is 0 or None (or anything but a positive integer), return results
+        starting from index 0, otherwise form index `offset`.
+        `limit` can be either None (default=20) or a positive integer. If
+        `limit` is None (or anything but a positive integer), return all the
+        entries to the end of the list (and from `offset`). Otherwise return at
+        most `limit` results (again starting from `offset`).
 
         Usage
-            jobs_get_list(owner=None, datasset=None)
+            jobs_get_list(owner=None, datasset=None, offset=None, limit=20)
 
         Return
             [{GlobalJobId, DAGManJobId, Dataset, Owner, JobStartDate,
@@ -363,7 +379,10 @@ class Daemon(object):
                   'JobDuration')
         # FIXME: Danger of using too much memory here!
         return([dict([(f, getattr(e, f, None)) for f in fields]) \
-                for e in blackboard.listEntries(owner=owner, dataset=dataset)])
+                for e in blackboard.listEntries(owner=owner,
+                                                dataset=dataset,
+                                                limit=limit,
+                                                offset=offset)])
 
     def owlapi_jobs_get_info(self, job_id):
         """
