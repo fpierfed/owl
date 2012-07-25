@@ -181,7 +181,6 @@ if(__name__ == '__main__'):
         for i in range(len(args)):
             if(args[i] == 'None'):
                 args[i] = None
-        print(args)
         print(getattr(owl, method)(*args))
 
 
