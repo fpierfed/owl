@@ -176,6 +176,12 @@ if(__name__ == '__main__'):
     else:
         owl = OwlClient(ipaddr, options.port)
         method = args.pop(0)
+
+        # Handle any None
+        for i in range(len(args)):
+            if(args[i] == 'None'):
+                args[i] = None
+        print(args)
         print(getattr(owl, method)(*args))
 
 
