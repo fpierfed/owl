@@ -376,21 +376,49 @@ def updateEntry(job):
     return
 
 
-def listEntries(owner=None, dataset=None):
+def listEntries(owner=None, dataset=None, limit=None, offset=None):
     """
-    List all known Blackboard entries and return them to the caller.
+    List all known Blackboard entries and return them to the caller. Implement
+    pagination via limit and offset.
     """
     # Define the database connection.
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
 
+    try:
+        limit = int(limit)
+    except:
+        # Either None or something that cannot be cast to an int. Assume we want
+        # all results.
+        limit = None
+    try:
+        offset = int(offset)
+    except:
+        # Either None or something that cannot be cast to an int. Assume we want
+        # to start from 0.
+        offset = 0
+    if(limit is not None and limit < 0):
+        limit = None
+    elif(limit == 0):
+        # No results wanted?
+        return([])
+
+    if(offset < 0):
+        offset = 0
+
     query = Blackboard.query
     if(dataset):
         query = query.filter_by(Dataset=dataset)
     if(owner):
         query = query.filter_by(Owner=owner)
-    return(query.order_by(desc(Blackboard.JobStartDate)).all())
+    query = query.order_by(desc(Blackboard.JobStartDate))
+
+    if(limit is not None):
+        query = query.limit(limit)
+    if(offset is not None):
+        query = query.offset(offset)
+    return(query.all())
 
 
 def getEntry(entryId):
