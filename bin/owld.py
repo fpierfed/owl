@@ -466,8 +466,9 @@ if(__name__ == '__main__'):
 
 
     port = int(config.OWLD_PORT)
-    hostname = socket.gethostname()
-    this_ip = socket.gethostbyname(hostname)
+    # hostname = socket.gethostname()
+    # this_ip = socket.gethostbyname(hostname)
+    this_ip = '0.0.0.0'
 
     print('Starting OWLD on %s:%d' % (this_ip, port))
     daemon = Daemon(ipaddr=this_ip, port=port,
