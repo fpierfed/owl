@@ -174,7 +174,7 @@ def condor_status(machine_name=None, timeout=TIMEOUT):
     args = [which('condor_status'), '-long']
     if(machine_name):
         args.append(machine_name)
-    return(_run_condor_cmd(args, machines))
+    return(_run_condor_cmd(args, machines, timeout=timeout))
 
 
 def condor_stats(timeout=TIMEOUT):
@@ -184,30 +184,50 @@ def condor_stats(timeout=TIMEOUT):
     ad = ClassAd(MyType='Scheduler',
                  Name='Error communicating with the Condor Schedd.')
     args = [which('condor_status'), '-long', '-schedd']
-    res = _run_condor_cmd(args, [ad, ])
+    res = _run_condor_cmd(args, [ad, ], timeout=timeout)
     return(res[0])
 
 
-def condor_hold(job_id, timeout=TIMEOUT):
+def condor_hold(job_id=None, owner=None, timeout=TIMEOUT):
     """
-    Wrapper around condor_hold: put the job with the given `job_id` on hold.
+    Wrapper around condor_hold: put the job with the given `job_id` or all jobs
+    of the given `owner` (depending on which one is not None) on hold.  If both
+    `job_id` and `owner` are specified, `owner` is ignored.
 
     Return
+        255 if both `job_id` and `owner` == None or
         condor_hold exit code
     """
+    if(job_id is not None):
+        arg = job_id
+    elif(owner is not None):
+        arg = owner
+    else:
+        return(255)
+
     # Invoke condot_hold.
-    return(_run((which('condor_hold'), str(job_id)), timeout))
+    return(_run((which('condor_hold'), str(arg)), timeout))
 
 
-def condor_release(job_id, timeout=TIMEOUT):
+def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
     """
-    Wrapper around condor_release: release the job with the given `job_id`.
+    Wrapper around condor_release: release the job with the given `job_id` or
+    all the jobs of the given `owner` (depending on which one is not None). If
+    both `job_id` and `owner` are specified, `owner` is ignored.
 
     Return
+        255 if both `job_id` and `owner` == None or
         condor_release exit code
     """
+    if(job_id is not None):
+        arg = job_id
+    elif(owner is not None):
+        arg = owner
+    else:
+        return(255)
+
     # Invoke condot_release.
-    return(_run((which('condor_release'), str(job_id)), timeout))
+    return(_run((which('condor_release'), str(arg)), timeout))
 
 
 
