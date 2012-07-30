@@ -229,6 +229,7 @@ def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
     # Invoke condot_release.
     return(_run((which('condor_release'), str(arg)), timeout))
 
+
 def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
     """
     Wrapper around condor_prio: set the priority of the job with the given
@@ -260,6 +261,35 @@ def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
 
     # Invoke condot_release.
     return(_run((which('condor_prio'), '-p', str(priority), str(arg)), timeout))
+
+
+def condor_getprio(job_id):
+    """
+    Use condor_q to retrieve the priority of the job with the given `job_id`.
+    Return the job priority as positive integer (or 0 , which is the default job
+    priority in Condor) or None in case of error.
+
+    Return
+        job priority as positive integer
+        None if the job could not be found.
+    """
+    stdout = _run_and_get_stdout([which('condor_q'),
+                                  '-format',
+                                  '"%d\n"',
+                                  'JobPrio',
+                                  str(job_id)])
+    if(stdout is None):
+        return
+    res = open(stdout).readline().strip()
+    if(not res):
+        return
+    try:
+        priority = int(res)
+    except (ValueError, TypeError):
+        return
+    return(priority)
+
+
 
 
 
