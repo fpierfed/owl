@@ -436,6 +436,28 @@ class Daemon(object):
         """
         return(condor.condor_release(job_id=job_id, owner=owner))
 
+    def owlapi_jobs_set_priority(self, priority, job_id=None, owner=None):
+        """
+        Set the `priority` of the job corresponding to the given GlobalJobId
+        `job_id` (if not None) or of all the jobs of the given `owner` (if not
+        None). It is important to notice that `jobs_id` and `owner` are mutually
+        exclusive and `job_id` has precendence. Return condor_prio exit code.
+
+        `priority` can be any positive integer (or 0), with higher numbers
+        corresponding to greater priority. For reference, job priority defaults
+        to 0.
+
+        Usage
+            jobs_resume(job_id=None, owner=None)
+
+        Return
+            0: success
+            255: both `job_id` and `owner` are None
+            254: if `priority` is not a positive (or 0) integer
+            otherwise: error condition (the same returned by condor_release)
+        """
+        return(condor.condor_prio(priority, job_id=job_id, owner=owner))
+
 
 
 def new_command_id(queue):
