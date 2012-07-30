@@ -448,7 +448,7 @@ class Daemon(object):
         to 0.
 
         Usage
-            jobs_resume(job_id=None, owner=None)
+            jobs_set_priority(priority, job_id=None, owner=None)
 
         Return
             0: success
@@ -457,6 +457,24 @@ class Daemon(object):
             otherwise: error condition (the same returned by condor_release)
         """
         return(condor.condor_prio(priority, job_id=job_id, owner=owner))
+
+    def owlapi_jobs_get_priority(self, job_id):
+        """
+        Get the `priority` of the job corresponding to the given GlobalJobId
+        `job_id`. Return the job priority or None in case of error.
+
+        `priority` can be any positive integer (or 0), with higher numbers
+        corresponding to greater priority. For reference, job priority defaults
+        to 0.
+
+        Usage
+            jobs_get_priority(job_id)
+
+        Return
+            int: job priority
+            None: error condition
+        """
+        return(condor.condor_getprio(job_id))
 
 
 
