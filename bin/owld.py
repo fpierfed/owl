@@ -29,10 +29,6 @@ import asynchat
 import inspect
 import json
 import os
-try:
-    import cPickle as pickle
-except:
-    import pickle
 import Queue
 import select
 import socket
@@ -134,6 +130,9 @@ class RequestHandler(asynchat.async_chat):
         return
 
     def reply(self, message):
+        """
+        Simply send `message` back to the client.
+        """
         self.push(json.dumps(message) + '\n')
         self.close_when_done()
         return
@@ -396,12 +395,46 @@ class Daemon(object):
             the given blackboard entry as a dictionay.
         """
         try:
-            b = blackboard.getEntry(job_id)
+            entry = blackboard.getEntry(job_id)
         except:
-            b = None
-        if(not b):
+            entry = None
+        if(not entry):
             return
-        return(b.todict())
+        return(entry.todict())
+
+    def owlapi_jobs_suspend(self, job_id=None, owner=None):
+        """
+        Suspend the job corresponding to the given GlobalJobId `job_id` (if not
+        None) or all the jobs of the given `owner` (if not None). It is
+        important to notice that `jobs_id` and `owner` are mutually exclusive
+        and `job_id` has precendence. Return condor_hold exit code.
+
+        Usage
+            jobs_suspend(job_id=None, owner=None)
+
+        Return
+            0: success
+            255: both `job_id` and `owner` are None
+            otherwise: error condition (the same returned by condor_hold)
+        """
+        return(condor.condor_hold(job_id=job_id, owner=owner))
+
+    def owlapi_jobs_resume(self, job_id=None, owner=None):
+        """
+        Resume the job corresponding to the given GlobalJobId `job_id` (if not
+        None) or all the jobs of the given `owner` (if not None). It is
+        important to notice that `jobs_id` and `owner` are mutually exclusive
+        and `job_id` has precendence. Return condor_release exit code.
+
+        Usage
+            jobs_resume(job_id=None, owner=None)
+
+        Return
+            0: success
+            255: both `job_id` and `owner` are None
+            otherwise: error condition (the same returned by condor_release)
+        """
+        return(condor.condor_release(job_id=job_id, owner=owner))
 
 
 
@@ -447,12 +480,20 @@ def build_message(pid, timeout):
     """
     DC_CHILDALIVE = 60008
 
-    message=array.array('H')
-    message.append(0); message.append(0); message.append(0) # padding
+    message = array.array('H')
+    message.append(0)
+    message.append(0)
+    message.append(0) # padding
     message.append(socket.htons(DC_CHILDALIVE))
-    message.append(0); message.append(0); message.append(0) # padding
+
+    message.append(0)
+    message.append(0)
+    message.append(0) # padding
     message.append(socket.htons(pid))
-    message.append(0); message.append(0); message.append(0) # padding
+
+    message.append(0)
+    message.append(0)
+    message.append(0) # padding
     message.append(socket.htons(timeout))
     return(message.tostring())
 
@@ -466,11 +507,11 @@ if(__name__ == '__main__'):
 
 
     port = int(config.OWLD_PORT)
-    # hostname = socket.gethostname()
+    hostname = socket.gethostname()
     # this_ip = socket.gethostbyname(hostname)
     this_ip = '0.0.0.0'
 
-    print('Starting OWLD on %s:%d' % (this_ip, port))
+    print('Starting OWLD on %s:%d' % (hostname, port))
     daemon = Daemon(ipaddr=this_ip, port=port,
                     heartbeat_timeout=HEARTBEAT_TIMEOUT)
     try:
