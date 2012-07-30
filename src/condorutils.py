@@ -229,6 +229,38 @@ def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
     # Invoke condot_release.
     return(_run((which('condor_release'), str(arg)), timeout))
 
+def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
+    """
+    Wrapper around condor_prio: set the priority of the job with the given
+    `job_id` or of all the jobs of the given `owner` (depending on which one is
+    not None). If both `job_id` and `owner` are specified, `owner` is ignored.
+
+    `priority` can be any positive integer (or 0), with higher numbers
+    corresponding to greater priority. For reference, job priority defaults to
+    0.
+
+    Return
+        255 if both `job_id` and `owner` == None or
+        254 if `priority` is not a positive (or 0) integer or
+        condor_prio exit code
+    """
+    if(job_id is not None):
+        arg = job_id
+    elif(owner is not None):
+        arg = owner
+    else:
+        return(255)
+
+    try:
+        priority = int(priority)
+    except (ValueError, TypeError):
+        return(254)
+    if(priority < 0):
+        return(254)
+
+    # Invoke condot_release.
+    return(_run((which('condor_prio'), '-p', str(priority), str(arg)), timeout))
+
 
 
 
