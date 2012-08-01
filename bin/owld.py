@@ -39,6 +39,8 @@ import owl.condorutils as condor
 from owl import blackboard
 
 
+# FIXME: Parse GlobalJobId to get the name of the schedd to query and the jobId.
+
 
 # Constants
 OWLD_METHOD_PREFIX = 'owlapi_'
@@ -415,6 +417,7 @@ class Daemon(object):
         Return
             0: success
             255: both `job_id` and `owner` are None
+            254 if job_id is not a valid Condor (local or global) job ID
             otherwise: error condition (the same returned by condor_hold)
         """
         return(condor.condor_hold(job_id=job_id, owner=owner))
@@ -432,6 +435,7 @@ class Daemon(object):
         Return
             0: success
             255: both `job_id` and `owner` are None
+            254 if job_id is not a valid Condor (local or global) job ID
             otherwise: error condition (the same returned by condor_release)
         """
         return(condor.condor_release(job_id=job_id, owner=owner))
@@ -453,7 +457,8 @@ class Daemon(object):
         Return
             0: success
             255: both `job_id` and `owner` are None
-            254: if `priority` is not a positive (or 0) integer
+            254 if job_id is not a valid Condor (local or global) job ID
+            253: if `priority` is not a positive (or 0) integer
             otherwise: error condition (the same returned by condor_release)
         """
         return(condor.condor_prio(priority, job_id=job_id, owner=owner))
