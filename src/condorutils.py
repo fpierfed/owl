@@ -69,6 +69,56 @@ def _parse_classads(stdout):
     return(ads)
 
 
+def _parse_globaljobid(gjob_id):
+    """
+    A Condor GlobalJobId has the following format:
+        <submit host>#<ClusterId>.<ProcId>#<unix timestamp>
+    where
+        <submit host> is the name of the machine the submit machine.
+        ClusterId and ProcId for the standard Condor Job ID = ClusterId.ProcId.
+        <unix timestamp> is the UNIX timestamp of the job insertion in the
+            Condor queue.
+    Return
+        [<submit host>, <ClusterId>.<ProcId>, <unix timestamp>]
+    """
+    if(not is_globaljobid(gjob_id)):
+        raise(ValueError('%s is not a valid Condor GlobalJobId' \
+                         % (str(gjob_id))))
+
+    tokens = gjob_id.strip().split('#')
+    tokens[-1] = int(tokens[-1])
+    return(tokens)
+
+
+def is_globaljobid(gjob_id):
+    """
+    Is the input `gjob_id` a valid Condor GlobalJobId?
+    """
+    if(gjob_id.count('#') != 2):
+        return(False)
+    tokens = gjob_id.split('#')
+    try:
+        _ = int(tokens[2])
+    except:
+        return(False)
+    if(not is_localjobid(tokens[1])):
+        return(False)
+    return(True)
+
+
+def is_localjobid(job_id):
+    """
+    Is the given `job_id` a local Job ID of the form <ClusterId>.<ProcId>?
+    """
+    try:
+        (cluster, proc) = job_id.split('.')
+        _ = int(cluster)
+        _ = int(proc)
+    except:
+        return(False)
+    return(True)
+
+
 def _run_and_get_stdout(args, timeout=TIMEOUT):
     """
     Simple wrapper around subprocess.Popen() with support for timeouts. Return
@@ -141,7 +191,7 @@ def _run(args, timeout=TIMEOUT):
     return(None)
 
 
-def _run_condor_cmd( argv, error_result, timeout=TIMEOUT):
+def _run_condor_cmd(argv, error_result, timeout=TIMEOUT):
     """
     Internal: execute the command specified in `argv` and either return its
     parsed STDOUT (as list of ClassAd instances) or `error_result` in case of
@@ -188,6 +238,45 @@ def condor_stats(timeout=TIMEOUT):
     return(res[0])
 
 
+def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
+                        timeout=TIMEOUT):
+    """
+    Internal convenience function to handle all Condor commands that deal with
+    jobs, schedds and owner input.
+
+    Return
+        255 if both `job_id` and `owner` == None or
+        254 if job_id is not a valid Condor (local or global) job ID or
+        `cmd` exit code
+    """
+    schedd_argv = []
+    if(extra_argv is None):
+        extra_argv = []
+    elif(not isinstance(extra_argv, (list, tuple))):
+        # We are being very tolerant here: others would probably throw and
+        # exception and would be right in doing so.
+        # FIXME: Throw an exception instead?
+        extra_argv = [extra_argv, ]
+
+    if(job_id is not None):
+        # Start assuming that job_id is a local ID.
+        arg = job_id
+        # Then check if it is global.
+        if(is_globaljobid(job_id)):
+            [schedd, job_id, _] = _parse_globaljobid(job_id)
+            schedd_argv = ['-n', schedd]
+        # Then, if it is neither global not local, error out.
+        elif(not is_localjobid(job_id)):
+            return(254)
+    elif(owner is not None):
+        arg = owner
+    else:
+        return(255)
+
+    # Invoke condot_hold.
+    return(_run([which(cmd)] + schedd_argv + extra_argv + [str(arg)], timeout))
+
+
 def condor_hold(job_id=None, owner=None, timeout=TIMEOUT):
     """
     Wrapper around condor_hold: put the job with the given `job_id` or all jobs
@@ -196,17 +285,11 @@ def condor_hold(job_id=None, owner=None, timeout=TIMEOUT):
 
     Return
         255 if both `job_id` and `owner` == None or
+        254 if job_id is not a valid Condor (local or global) job ID or
         condor_hold exit code
     """
-    if(job_id is not None):
-        arg = job_id
-    elif(owner is not None):
-        arg = owner
-    else:
-        return(255)
-
     # Invoke condot_hold.
-    return(_run((which('condor_hold'), str(arg)), timeout))
+    return(_run_condor_job_cmd('condor_hold', [], job_id, owner, timeout))
 
 
 def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
@@ -219,15 +302,8 @@ def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
         255 if both `job_id` and `owner` == None or
         condor_release exit code
     """
-    if(job_id is not None):
-        arg = job_id
-    elif(owner is not None):
-        arg = owner
-    else:
-        return(255)
-
     # Invoke condot_release.
-    return(_run((which('condor_release'), str(arg)), timeout))
+    return(_run_condor_job_cmd('condor_release', [], job_id, owner, timeout))
 
 
 def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
@@ -242,25 +318,20 @@ def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
 
     Return
         255 if both `job_id` and `owner` == None or
-        254 if `priority` is not a positive (or 0) integer or
+        254 if job_id is not a valid Condor (local or global) job ID or
+        253 if `priority` is not a positive (or 0) integer or
         condor_prio exit code
     """
-    if(job_id is not None):
-        arg = job_id
-    elif(owner is not None):
-        arg = owner
-    else:
-        return(255)
-
     try:
         priority = int(priority)
     except (ValueError, TypeError):
-        return(254)
+        return(253)
     if(priority < 0):
-        return(254)
+        return(253)
 
     # Invoke condot_release.
-    return(_run((which('condor_prio'), '-p', str(priority), str(arg)), timeout))
+    return(_run_condor_job_cmd('condor_prio', ['-p', str(priority)], job_id,
+                               owner, timeout))
 
 
 def condor_getprio(job_id):
@@ -273,11 +344,18 @@ def condor_getprio(job_id):
         job priority as positive integer
         None if the job could not be found.
     """
-    stdout = _run_and_get_stdout([which('condor_q'),
-                                  '-format',
-                                  '"%d\n"',
-                                  'JobPrio',
-                                  str(job_id)])
+    # Just make sure we query the right Schedd.
+    schedd_argv = []
+    if(is_globaljobid(job_id)):
+        [schedd, job_id, _] = _parse_globaljobid(job_id)
+        schedd_argv = ['-name', schedd]
+
+    stdout = _run_and_get_stdout([which('condor_q')] +
+                                  schedd_argv +
+                                  ['-format',
+                                   '"%d\n"',
+                                   'JobPrio',
+                                   str(job_id)])
     if(stdout is None):
         return
     res = open(stdout).readline().strip()
