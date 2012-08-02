@@ -1,53 +1,68 @@
 #!/usr/bin/env python
-# Copyright (C) 2010 Association of Universities for Research in Astronomy(AURA)
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-# 
-#     1. Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-# 
-#     2. Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-# 
-#     3. The name of AURA and its representatives may not be used to
-#       endorse or promote products derived from this software without
-#       specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY AURA ``AS IS'' AND ANY EXPRESS OR IMPLIED
-# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL AURA BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
-# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
-# TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-# USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-# DAMAGE.
-
 from distutils.core import setup
 import glob
+import os
+import shutil
+import sys
 
 
 
 
-if __name__ == "__main__": 
+def _make_safe_backup(file_name, maxn=100):
+    """
+    Given a file name with full path `file_name`, rename it to
+        `file_name`.bakN
+    where N is 0 or a positive integer such that so existing file in the same
+    directory is clobbered. Give up after `maxn` tries.
+
+    Return whether or not a safe backup was created.
+    """
+    for i in range(maxn):
+        new_name = '%s.bak%d' % (file_name, i)
+        if(os.path.exists(new_name)):
+            continue
+        shutil.move(file_name, new_name)
+        return(True)
+    return(False)
+
+
+
+if __name__ == "__main__":
     SCRIPTS = glob.glob('bin/*.py')
-    
-    
-    setup(name = 'owl', 
-          description = "Governance according to good laws", 
-          author = "Francesco Pierfederici", 
+
+    # Copy ./etc to sys.prefix/etc/owl.
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'etc')
+    dst = os.path.join(sys.prefix, 'etc', 'owl')
+    if(os.path.exists(dst)):
+        # No need to create it: just copy everything in src to dst.
+        for file_name in os.listdir(src):
+            dst_file_name = os.path.join(dst, file_name)
+            if(os.path.exists(dst_file_name)):
+                # Move it out of the way.
+                ok = _make_safe_backup(dst_file_name)
+                if(not ok):
+                    msg = 'Unable to safely create %s.bakN in %s. Giving up.' \
+                          % (file_name, dst)
+                    raise(RuntimeError(msg))
+            shutil.copy(os.path.join(src, file_name), dst)
+    else:
+        # Copy the whole directory tree.
+        shutil.copytree(src, dst)
+
+    setup(name = 'owl',
+          description = "Governance according to good laws",
+          author = "Francesco Pierfederici",
           author_email = "fpierfed@stsci.edu",
           license = "BSD",
           version='0.1',
-          
+
           scripts=SCRIPTS,
           packages=['owl', 'owl.plugins', ],
           package_dir={'owl': 'src'},
-          package_data={'owl': ['etc/*', 'templates/*/*/*', ]},
-)
+          package_data={'owl': ['templates/*/*/*', ]},
+    )
+
+    print('Installed OWL configuration file(s) in %s/' % (dst))
+
+
 
