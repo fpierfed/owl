@@ -49,6 +49,19 @@ if __name__ == "__main__":
         # Copy the whole directory tree.
         shutil.copytree(src, dst)
 
+    # Create a owlrc.local from owlrc if the user does not have one already and
+    # an owlrc.local is not in our src etc directory (which would mean that the
+    # user has created a custon distribution since we do not put one there).
+    # We do this so that configurations have a change of surviving an upgrade.
+    src_owlrc = os.path.join(src, 'owlrc')
+    src_owlrc_local = os.path.join(src, 'owlrc.local')
+    dst_owlrc_local = os.path.join(dst, 'owlrc.local')
+    if(not os.path.exists(src_owlrc_local) and
+       not os.path.exists(dst_owlrc_local)):
+        # Not there, not copied. Make one.
+        shutil.copy(src_owlrc, dst_owlrc_local)
+
+
     setup(name = 'owl',
           description = "Governance according to good laws",
           author = "Francesco Pierfederici",

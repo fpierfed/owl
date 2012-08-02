@@ -76,17 +76,12 @@ if(os.path.exists(old_config)):
 # 4. neither file exist
 # In case 1, we simply read sys_config and then override its entries with those
 # in local_config.
-# In case 2, we read sys_config and WE CREATE AN IDENTICAL local_config.
+# In case 2, we just read sys_config.
 # In case 3, we error out.
 # In case 4, we error out.
 if(not os.path.exists(sys_config)):
     msg = 'OWL requires the configuration file %s to be present.' % (sys_config)
     raise(RuntimeError(msg))
-if(not os.path.exists(local_config)):
-    shutil.copyfile(sys_config, local_config)
-    msg = 'No local configuration file (%s) present. Created one from %s.' \
-          % (local_config, sys_config)
-    raise(Warning(msg))
 
 # Load the system config
 config = ConfigParser.RawConfigParser(defaults={'port': -1})
@@ -94,7 +89,8 @@ config.read(sys_config)
 
 # Load the local config and override whatever appropriate.
 lconfig = ConfigParser.RawConfigParser(defaults={'port': -1})
-config.read(local_config)
+if(os.path.exists(local_config)):
+    config.read(local_config)
 
 # Fetch the user environment and override whatever appropriate.
 env = os.environ
