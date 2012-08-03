@@ -49,17 +49,10 @@ if __name__ == "__main__":
         # Copy the whole directory tree.
         shutil.copytree(src, dst)
 
-    # Create a owlrc.local from owlrc if the user does not have one already and
-    # an owlrc.local is not in our src etc directory (which would mean that the
-    # user has created a custon distribution since we do not put one there).
-    # We do this so that configurations have a change of surviving an upgrade.
-    src_owlrc = os.path.join(src, 'owlrc')
-    src_owlrc_local = os.path.join(src, 'owlrc.local')
-    dst_owlrc_local = os.path.join(dst, 'owlrc.local')
-    if(not os.path.exists(src_owlrc_local) and
-       not os.path.exists(dst_owlrc_local)):
-        # Not there, not copied. Make one.
-        shutil.copy(src_owlrc, dst_owlrc_local)
+
+    import src as __owl_src
+    owl_version = __owl_src.__version__
+
 
 
     setup(name = 'owl',
@@ -67,7 +60,7 @@ if __name__ == "__main__":
           author = "Francesco Pierfederici",
           author_email = "fpierfed@stsci.edu",
           license = "BSD",
-          version='0.1',
+          version=owl_version,
 
           scripts=SCRIPTS,
           packages=['owl', 'owl.plugins', ],
@@ -75,7 +68,30 @@ if __name__ == "__main__":
           package_data={'owl': ['templates/*/*/*', ]},
     )
 
-    print('Installed OWL configuration file(s) in %s/' % (dst))
+
+    print("""
+
+
+OWL %(version)s
+
+
+The full OWL distribution was installed under
+    %(install_dir)s/
+
+The OWL command-line tools are typically available under
+    %(bin_dir)s/
+
+Configuration file(s) are are typically available under
+    %(config_dir)s/
+
+Please customize the default configuration by creating an owlrc.local file in
+the same directory (if you haven't done that already). This installation did not
+modify any pre-existing owlrc.local but archived any pre-existing owlrc file
+before writing the new one.
+""") % {'config_dir': dst,
+        'install_dir': sys.prefix,
+        'bin_dir': os.path.join(sys.prefix, 'bin'),
+        'version': owl_version}
 
 
 
