@@ -9,7 +9,7 @@ if __name__ == "__main__":
     SCRIPTS = glob.glob('bin/*.py')
 
 
-    setup(name = 'sdpq2',
+    setup(name = 'sdpq',
           description = "HST/JWST Science Data processing Queue",
           author = "Francesco Pierfederici",
           author_email = "fpierfed@stsci.edu",
@@ -17,7 +17,7 @@ if __name__ == "__main__":
           version='2.0',
 
           scripts=SCRIPTS,
-          packages=['sdpq2', 'sdpq2.plugins', ],
-          package_dir={'sdpq2': 'src'},
+          packages=['sdpq', 'sdpq.plugins', ],
+          package_dir={'sdpq': 'src'},
 )
 
