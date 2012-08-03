@@ -50,8 +50,7 @@ if __name__ == "__main__":
         shutil.copytree(src, dst)
 
 
-    import src as __owl_src
-    owl_version = __owl_src.__version__
+    from src import __version__
 
 
 
@@ -60,7 +59,7 @@ if __name__ == "__main__":
           author = "Francesco Pierfederici",
           author_email = "fpierfed@stsci.edu",
           license = "BSD",
-          version=owl_version,
+          version=__version__,
 
           scripts=SCRIPTS,
           packages=['owl', 'owl.plugins', ],
@@ -91,7 +90,7 @@ before writing the new one.
 """) % {'config_dir': dst,
         'install_dir': sys.prefix,
         'bin_dir': os.path.join(sys.prefix, 'bin'),
-        'version': owl_version}
+        'version': __version__}
 
 
 
