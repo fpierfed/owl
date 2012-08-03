@@ -1,31 +1,3 @@
-# Copyright (C) 2010 Association of Universities for Research in Astronomy(AURA)
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-# 
-#     1. Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-# 
-#     2. Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-# 
-#     3. The name of AURA and its representatives may not be used to
-#       endorse or promote products derived from this software without
-#       specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY AURA ``AS IS'' AND ANY EXPRESS OR IMPLIED
-# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL AURA BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
-# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
-# TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-# USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-# DAMAGE.
 """
 Define all Condor-specific DRMAA properties here.
 """
@@ -56,7 +28,7 @@ def createJobTemplate(drmaaSession, dagName, workDir):
     dagMan = which('condor_dagman')
     if(not dagMan):
         raise(Exception('Unable to find condor_dagman in $PATH'))
-    
+
     ad = drmaaSession.createJobTemplate()
     ad.remoteCommand = dagMan
     ad.workingDirectory = workDir
@@ -71,26 +43,26 @@ def createJobTemplate(drmaaSession, dagName, workDir):
 
 def submit(dagName, workDir, wait=False):
     """
-    Create a DRMAA session and submit the DAGMan job within it. If wait=False, 
+    Create a DRMAA session and submit the DAGMan job within it. If wait=False,
     submit the job asyncronously. Otherwise, wait for the job to complete and
     return its exit code as well.
-    
+
     Return
         jobId                   if wait == False
         (jobId, exit_code)      if wait == True
     """
     # TODO: homogenize the return type.
-    
+
     # Start the DRMAA session.
     session = drmaa.Session()
     session.initialize()
-    
+
     # Create the DRMAA ClassAd.
     ad = createJobTemplate(session, dagName, workDir)
-    
+
     # Submit the job.
     jobId = session.runJob(ad)
-    
+
     # Wait?
     if(wait):
         try:
@@ -101,11 +73,11 @@ def submit(dagName, workDir, wait=False):
             err = 0
     # Cleanup.
     session.deleteJobTemplate(ad)
-    
+
     # Close the DRMAA session.
     session.exit()
     # Mannage jobId so that it corresponds more closely to what is stored in the
-    # database: 
+    # database:
     #   <hostname>#<cluster id>.<job id> instead of
     #   <hostname>.<cluster id>.<job id> that we have here.
     # The database version of this id appends #<timestamp> to what we have here
