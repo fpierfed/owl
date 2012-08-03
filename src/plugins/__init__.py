@@ -2,5 +2,11 @@ try:
     import condor
 except:
     pass
-import makefile
-import xgrid
+try:
+    import makefile
+except:
+    pass
+try:
+    import xgrid
+except:
+    pass
