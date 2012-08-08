@@ -83,9 +83,7 @@ def is_localjobid(job_id):
     Is the given `job_id` a local Job ID of the form <ClusterId>.<ProcId>?
     """
     try:
-        (cluster, proc) = job_id.split('.')
-        _ = int(cluster)
-        _ = int(proc)
+        _ = float(job_id)
     except:
         return(False)
     return(True)
@@ -145,7 +143,10 @@ def _run(args, timeout=TIMEOUT):
     return None.
     """
     # Execute the external process.
-    proc = subprocess.Popen(args, shell=False)
+    proc = subprocess.Popen(args,
+                            shell=False,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
 
     # Since proc.wait() can deadlock, it is prudent to jut poll...
     start_time = time.time()
