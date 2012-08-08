@@ -1,0 +1,93 @@
+= OWL API =
+
+
+== Rationale ==
+A programming interface to query and/or control OWL and its resources. The API can be accessed over a network (with authentication and authorization) without requiring an OWL installation on the local machine.
+
+
+== Architecture ==
+This is a JSON TCP API, meaning that it is provided by a TCP service which uses JSON for serialization/deserialization of messages.
+
+The API service is a daemon (owld) included in each OWL installation. It is kept alive by the local Condor Master daemon. It listens to a standard network port $OWL_PORT (defined in a system-wide OWL configuration file).
+
+Typically, an OWL installation consists of
+ * One database server.
+ * One web server.
+ * One compute cluster (of N nodes) managed by Condor.
+As part of the compute cluster, there will be M (1 <= M <= N) submit nodes (i.e. machines users can log onto and submit jobs to the cluster). Each submit node has a full OWL installation. Each non-submit compute node has a minimal OWL installation (to support job hooks for blackboard handling).
+
+Each full OWL installation (i.e. each submit node) includes an API daemon listening on $OWL_PORT. Since the M submit nodes/OWL installations use the same blackboard and see the same Condor cluster, users can query any of the owld instances on the network and get the same results.
+
+Authentication and authorization is handled by way of secure certificates.
+
+
+== API ==
+The owld is a TCP socket server listening on $OWL_PORT. As such it can be accessed over a network using clients written in any language that supports TCP sockets. OWL includes a Python client (owl_client.py) which provides both a procedural and an object oriented interface to the owld. In the following, the object oriented interface is described. The procedural interface should be considered a programming example and not supported for end-user use.
+
+
+=== Requirements ===
+owl_client.py requires a reasonably recent Python installation. It has been tested with Python 2.7 but should work with versions as old as 2.5.
+
+
+
+=== Quick Example ===
+From the Python shell:
+{{{
+>>> from owl_client import OwlClient
+>>> client = OwlClient('192.168.2.1', 9999)
+>>> client.resources_get_list()
+u"[u'slot1@vesta.local', u'slot2@vesta.local', u'slot3@vesta.local', u'slot4@vesta.local', u'slot5@vesta.local', u'slot6@vesta.local', u'slot7@vesta.local', u'slot8@vesta.local']"
+}}}
+
+
+=== !OwlClient Class ===
+!OwlClient(''addr'', ''port''=9999)
+
+Create an !OwlClient instance. The instance is going to connect to an owld running on host ''addr'' listening on port ''port''. ''addr'' is a string and should either be a full IP address or a hostname. ''port'' is an integer and defaults to 9999. Note that the !OwlClient instance created is not connected to the owld yet. It only connects on demand (i.e. when one of the methods below is invoked and only for the duration of the method invocation).
+
+
+
+=== !OwlClient Methods ===
+
+==== Hardware Resources (IMPLEMENTED) ====
+ * resources_get_list()
+  * Return list of compute resources available [!ResourceName, ...].
+ * resources_get_info(''!ResourceName'')
+  * Return details on a given compute resource as a Python dictionary.
+ * resources_get_stats()
+  * Return statistics on the cluster, including job submissions etc. as a Python dictionary.
+
+
+==== Job Monitoring (IMPLEMENTED) ====
+ * jobs_get_list(''owner''=None, ''dataset''=None, ''offset''=None, ''limit''=20)
+  * Return list of submitted jobs [!JobSummary, ...] where !JobSummary is a Python dictionary with the following keys: !GlobalJobId, DAGManJobId, Dataset, Owner, DAGNodeName, DAGParentNodeNames, !ExitCode, !JobState, !JobDuration. Jobs (i.e. blackboard entries) are selected on the basis of the optional arguments (AND-ed): if ''owner'' is not None, then only jobs submitted by ''owner'' are returned. If ''datdaset'' is not None, then only jobs processing ''dataset'' are returned. Finally, pagination is implemented using ''offset'' and ''limit'' (i.e. the resulting list is results[offset:offset+limit]). If ''limit'' is None, then results are not truncated. If ''offset'' is None, the results are returned starting from index ''offset''.
+ * jobs_get_info(''!GlobalJobId'')
+  * Return details on a given job as a Python dictionary. This is the full Blackboard entry for the given !GlobalJobId.
+
+
+==== Job Control (IMPLEMENTED) ====
+ * jobs_suspend(''job_id''=None, ''owner''=None)
+  * Suspend the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_hold.
+ * jobs_resume(''job_id''=None, ''owner''=None)
+  * Resume the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_release.
+ * jobs_get_priority(''job_id'')
+  * Return the priority of the job with the given !GlobalJobId ''job_id'' or None in case such a job is not currently queued/running. Priorities can be 0 (the default value) or any positive integer. Higher values mean higher job priorities. This does not look into historical jobs in the blackboard database but rather only in the active Condor queue.
+ * jobs_set_priority(''priority'', ''job_id''=None, ''owner''=None)
+  * Set the priority to ''priority'' for the given !GlobalJobId ''job_id'' or, if that is None, for all jobs of the given ''owner''. Return the exit code of condor_prio. Priorities can be 0 (the default value) or any positive integer. Higher values mean higher job priorities. This does not edit historical jobs in the blackboard database but rather only in the active Condor queue.
+
+
+
+
+==== Dataset Monitoring (IMPLEMENTED) ====
+Implemented via "Job Monitoring" methods.
+
+
+
+
+
+=== Appendix A: OWLD Installation ===
+The owld requires a full OWL installation and should be only installed on a Condor submit node. Once that is done, simply define OWLD in the local Condor configuration file and add it to DAEMON_LIST (from /etc/condor/condor_config.local):
+{{{
+OWLD = <path to >/owld.py
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD, OWLD
+}}}

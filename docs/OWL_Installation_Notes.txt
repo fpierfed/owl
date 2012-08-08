@@ -1,0 +1,842 @@
+== OWL Installation Notes (tlblazer) ==
+''or How to Install OWL on a New Machine''
+
+
+=== Introduction ===
+OWL (formerly nows as eunomia) currently lives on !GitHub: https://github.com/fpierfed/owl and is a pure Python module. It relies on a handful of Python dependencies:
+  * Python itself (any Python >= 2.5 should work).
+  * Elixir ORM (http://elixir.ematia.de/trac/wiki), which in turn depends on:
+  * SQLAlchemy (http://www.sqlalchemy.org/).
+
+If one wants to use OWL with Condor, then one has to install
+  * Condor itself (http://research.cs.wisc.edu/condor/), making sure that its libdrmaa is included in the distribution.
+  * Python DRMAA (http://code.google.com/p/drmaa-python/).
+
+What follows is a log of the installation steps required for a full OWL + Condor installation on a STScI DMS test machine (tlblazer in our case), running Red Hat Enterprise Linux 6.x
+
+
+=== Condor ===
+To get things going, ask ITSD to install Condor 7.6.x and make sure that they (i.e. ITSD) gives you permission to start and stop it as well as to edit its configuration files in
+{{{
+/etc/condor
+}}}
+
+and subdirectories.
+
+Once installed, start it up with
+{{{
+tlblazer> sudo /sbin/service condor start
+}}}
+and stop it with
+{{{
+tlblazer> sudo /sbin/service condor stop
+}}}
+
+Also, machine-specific configuration directives go in /etc/condor/condor_config.local
+{{{
+tlblazer> cat /etc/condor/condor_config.local
+##  What machine is your central manager?
+CONDOR_HOST = tlblazer.stsci.edu
+
+## Pool's short description
+COLLECTOR_NAME = Test JWST Pool
+
+##  When is this machine willing to start a job? 
+START = TRUE
+
+
+##  When to suspend a job?
+SUSPEND = FALSE
+
+
+##  When to nicely stop a job?
+##  (as opposed to killing it instantaneously)
+PREEMPT = FALSE
+
+
+##  When to instantaneously kill a preempting job
+##  (e.g. if a job is in the pre-empting stage for too long)
+KILL = FALSE
+
+##  This macro determines what daemons the condor_master will start and keep its watchful eyes on.
+##  The list is a comma or space separated list of subsystem names
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+
+#  Disable UID_DOMAIN check when submit a job
+TRUST_UID_DOMAIN = TRUE
+
+## Which machies are allowed to join the pool?
+HOSTALLOW_WRITE = *.stsci.edu
+HOSTALLOW_READ = *.stsci.edu
+}}}
+
+Which, as initial configuration for a single-machine Condor pool is good enough for now. Note that ay STScI machine can join the pool and submit jobs to it as per the last two lines of the configuration file. This might or might not be OK and we can change it later. Any time the configuration file is changed, restart Condor:
+{{{
+tlblazer> sudo /sbin/service condor stop; sudo /sbin/service condor start
+}}}
+
+Test that it is running (wait a few seconds for Condor to start up):
+{{{
+tlblazer> condor_status                      
+
+Name               OpSys      Arch   State     Activity LoadAv Mem   ActvtyTime
+
+slot10@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:33
+slot11@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:34
+slot12@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:35
+slot13@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:36
+slot14@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:37
+slot15@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:38
+slot16@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:31
+slot17@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:32
+slot18@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:33
+slot19@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:34
+slot1@tlblazer.sts LINUX      X86_64 Unclaimed Idle     1.000  5377 10+22:36:01
+slot20@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:35
+slot21@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:36
+slot22@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:37
+slot23@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:38
+slot24@tlblazer.st LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:31
+slot2@tlblazer.sts LINUX      X86_64 Unclaimed Idle     1.000  5377 10+22:36:33
+slot3@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.120  5377 10+22:36:34
+slot4@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:35
+slot5@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:36
+slot6@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:37
+slot7@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:38
+slot8@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:31
+slot9@tlblazer.sts LINUX      X86_64 Unclaimed Idle     0.000  5377 10+22:36:32
+                     Total Owner Claimed Unclaimed Matched Preempting Backfill
+
+        X86_64/LINUX    24     0       0        24       0          0        0
+
+               Total    24     0       0        24       0          0        0
+}}}
+
+Congratulations: Condor is not up and running and with a reasonable initial setup.
+
+
+=== Python ===
+We opt for not using system Python (we could if we wanted to) and have our own software stack under
+{{{
+tlblazer> ls -als /`hostname -s`/jwst
+}}}
+Which translates to /tlblazer/jwst
+
+Install Python there, with the usual configure; make; make install dance. Just make sure to use
+{{{
+tlblazer> ./configure --prefix=/tlblazer/jwst
+}}}
+
+The build process will complain that a few modules could not be built, including dl. That is generally OK.
+
+Make sure that /tlblazer/jwst/bin is in your PATH.
+
+
+
+=== Python Modules ===
+In order to make things easier, install setuptools by downloading and executing ez_setup.py:
+{{{
+tlblazer> wget http://peak.telecommunity.com/dist/ez_setup.py
+--2012-02-06 16:06:26--  http://peak.telecommunity.com/dist/ez_setup.py
+Resolving peak.telecommunity.com... 209.190.5.234
+Connecting to peak.telecommunity.com|209.190.5.234|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 10240 (10K) [text/plain]
+Saving to: “ez_setup.py”
+
+100%[===============================================================================================================================================================================================>] 10,240      --.-K/s   in 0.03s   
+
+2012-02-06 16:06:26 (299 KB/s) - “ez_setup.py” saved [10240/10240]
+
+tlblazer> python ez_setup.py 
+Downloading http://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg
+Processing setuptools-0.6c11-py2.7.egg
+Copying setuptools-0.6c11-py2.7.egg to /tlblazer/jwst/lib/python2.7/site-packages
+Adding setuptools 0.6c11 to easy-install.pth file
+Installing easy_install script to /tlblazer/jwst/bin
+Installing easy_install-2.7 script to /tlblazer/jwst/bin
+
+Installed /tlblazer/jwst/lib/python2.7/site-packages/setuptools-0.6c11-py2.7.egg
+Processing dependencies for setuptools==0.6c11
+Finished processing dependencies for setuptools==0.6c11
+}}}
+
+Now we can use easy_install to install elixir. Just to be on the safe side, we ask easy_install to always unzip Python eggs. This way Python scripts invoked by users with no home directory and no write permissions to /tmp do not run into troubles.
+{{{
+tlblazer> easy_install-2.7 --always-unzip elixir
+Searching for elixir
+Reading http://pypi.python.org/simple/elixir/
+Reading http://elixir.ematia.de
+Best match: Elixir 0.7.1
+Downloading http://pypi.python.org/packages/source/E/Elixir/Elixir-0.7.1.tar.gz#md5=5615ec9693e3a8e44f69623d58f54116
+Processing Elixir-0.7.1.tar.gz
+Running Elixir-0.7.1/setup.py -q bdist_egg --dist-dir /tmp/easy_install-cCNHlj/Elixir-0.7.1/egg-dist-tmp-FsY7Pj
+warning: no previously-included files found matching 'release.howto'
+zip_safe flag not set; analyzing archive contents...
+Adding Elixir 0.7.1 to easy-install.pth file
+
+Installed /tlblazer/jwst/lib/python2.7/site-packages/Elixir-0.7.1-py2.7.egg
+Processing dependencies for elixir
+Searching for SQLAlchemy>=0.4.0
+Reading http://pypi.python.org/simple/SQLAlchemy/
+Reading http://www.sqlalchemy.org
+Best match: SQLAlchemy 0.7.5
+Downloading http://pypi.python.org/packages/source/S/SQLAlchemy/SQLAlchemy-0.7.5.tar.gz#md5=5bce21d5dcf055addf564442698e58e5
+Processing SQLAlchemy-0.7.5.tar.gz
+Running SQLAlchemy-0.7.5/setup.py -q bdist_egg --dist-dir /tmp/easy_install-2BZ69y/SQLAlchemy-0.7.5/egg-dist-tmp-wC0GHM
+warning: no files found matching '*.jpg' under directory 'doc'
+no previously-included directories found matching 'doc/build/output'
+zip_safe flag not set; analyzing archive contents...
+Adding SQLAlchemy 0.7.5 to easy-install.pth file
+
+Installed /tlblazer/jwst/lib/python2.7/site-packages/SQLAlchemy-0.7.5-py2.7-linux-x86_64.egg
+Finished processing dependencies for elixir
+}}}
+
+Make sure that the eggs were unzipped:
+{{{
+tlblazer> ls -als /tlblazer/jwst/lib/python2.7/site-packages/
+total 372
+  4 drwxr-sr-x  4 fpierfed dmstest   4096 Feb  6 16:11 ./
+ 20 drwxr-sr-x 27 fpierfed dmstest  20480 Feb  6 16:00 ../
+  4 -rw-r--r--  1 fpierfed dmstest    282 Feb  6 16:11 easy-install.pth
+  4 drwxr-sr-x  4 fpierfed dmstest   4096 Feb  6 16:11 Elixir-0.7.1-py2.7.egg/
+  4 -rw-r--r--  1 fpierfed dmstest    119 Feb  6 16:00 README
+328 -rw-r--r--  1 fpierfed dmstest 332005 Feb  6 16:06 setuptools-0.6c11-py2.7.egg
+  4 -rw-r--r--  1 fpierfed dmstest     30 Feb  6 16:06 setuptools.pth
+  4 drwxr-sr-x  4 fpierfed dmstest   4096 Feb  6 16:11 SQLAlchemy-0.7.5-py2.7-linux-x86_64.egg/
+}}}
+
+Now, Condor RPMs do not generally include libdrmaa, which is a shame. We either have to compile it ourselves from the Condor source distribution or download Condor binary packages and copy it from there. Just make sure to download the same version as the what you have installed from RPMs :-)
+{{{
+tlblazer> condor_version            
+$CondorVersion: 7.6.6 Jan 17 2012 BuildID: 401976 $
+$CondorPlatform: x86_64_rhap_5 $
+}}}
+
+In our case, we need Condor 7.6.6 X86_64 for Red Hat Enterprise Linux 5, stripped binaries: condor-7.6.6-x86_64_rhap_5-stripped.tar.gz. Download it form the Condor home page (see above), unzip, untar and then:
+{{{
+tlblazer> cp condor-7.6.6-x86_64_rhap_5-stripped/lib/libdrmaa.so /tlblazer/jwst/lib/
+tlblazer> cp condor-7.6.6-x86_64_rhap_5-stripped/include/drmaa.h /tlblazer/jwst/include/
+}}}
+
+After that install Python-DRMAA:
+{{{
+tlblazer> easy_install-2.7 --always-unzip drmaa 
+Searching for drmaa
+Reading http://pypi.python.org/simple/drmaa/
+Reading http://drmaa-python.googlecode.com
+Reading http://code.google.com/p/drmaa-python/downloads/list
+Best match: drmaa 0.5
+Downloading http://drmaa-python.googlecode.com/files/drmaa-0.5-py2.7.egg
+Processing drmaa-0.5-py2.7.egg
+creating /tlblazer/jwst/lib/python2.7/site-packages/drmaa-0.5-py2.7.egg
+Extracting drmaa-0.5-py2.7.egg to /tlblazer/jwst/lib/python2.7/site-packages
+Adding drmaa 0.5 to easy-install.pth file
+
+Installed /tlblazer/jwst/lib/python2.7/site-packages/drmaa-0.5-py2.7.egg
+Processing dependencies for drmaa
+Finished processing dependencies for drama
+}}}
+
+Check and make sure that it works:
+{{{
+tlblazer> python2.7 -c "import drmaa"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/tlblazer/jwst/lib/python2.7/site-packages/drmaa-0.5-py2.7.egg/drmaa/__init__.py", line 41, in <module>
+    import drmaa.wrappers as _w
+  File "/tlblazer/jwst/lib/python2.7/site-packages/drmaa-0.5-py2.7.egg/drmaa/wrappers.py", line 43, in <module>
+    raise RuntimeError(errmsg)
+RuntimeError: could not find drmaa library. Please specify its full path using the environment variable DRMAA_LIBRARY_PATH
+}}}
+
+Nope: time to define DRMAA_LIBRARY_PATH in our environment:
+{{{
+tlblazer> setenv DRMAA_LIBRARY_PATH /tlblazer/jwst/lib/libdrmaa.so 
+tlblazer> python2.7 -c "import drmaa"                             
+}}}
+
+Finally, jinja2
+{{{
+tlblazer> easy_install-2.7 --always-unzip jinja2
+Searching for jinja2
+Reading http://pypi.python.org/simple/jinja2/
+Reading http://jinja.pocoo.org/
+Best match: Jinja2 2.6
+Downloading http://pypi.python.org/packages/source/J/Jinja2/Jinja2-2.6.tar.gz#md5=1c49a8825c993bfdcf55bb36897d28a2
+Processing Jinja2-2.6.tar.gz
+Running Jinja2-2.6/setup.py -q bdist_egg --dist-dir /tmp/easy_install-WfBCWo/Jinja2-2.6/egg-dist-tmp-hdLCgB
+warning: no previously-included files matching '*' found under directory 'docs/_build'
+warning: no previously-included files matching '*.pyc' found under directory 'jinja2'
+warning: no previously-included files matching '*.pyc' found under directory 'docs'
+warning: no previously-included files matching '*.pyo' found under directory 'jinja2'
+warning: no previously-included files matching '*.pyo' found under directory 'docs'
+Adding Jinja2 2.6 to easy-install.pth file
+
+Installed /tlblazer/jwst/lib/python2.7/site-packages/Jinja2-2.6-py2.7.egg
+Processing dependencies for jinja2
+Finished processing dependencies for jinja2
+
+}}}
+
+
+=== OWL ===
+{{{
+tlblazer> git clone git@github.com:fpierfed/owl.git
+tlblazer> cd owl/ 
+tlblazer> python2.7 setup.py install
+[...]
+Writing /tlblazer/jwst/lib/python2.7/site-packages/owl-0.1-py2.7.egg-info
+}}}
+
+
+=== Configure OWL ===
+Now we need to configure OWL. We can do this by either editing the configuration file in the install directory (in our case /tlblazer/jwst/lib/python2.7/site-packages/owl/etc/owlrc) or in /etc/owlrc. The way OWL loads its configuration parameters is simple: it looks for /etc/owlrc. If it does not find it, looks for it inside the OWL install directory (/tlblazer/jwst/lib/python2.7/site-packages/owl/etc/owlrc in our case). If it does not find it, it raises an exception and dies.
+
+The configuration file is a text file in INI format. It has to at least have two sections, called Database and Directories. The Database section has to have (at a minimum), the following parameters:
+  * flavour
+  * host 
+  * password
+  * user
+  * database
+The port parameter is optional. All of these parameters can be left empty if not needed to connect to your particular database (e.g. SQLite uses flavour and database only) but (with the exception of port) they have to be there.
+
+Directories has to have
+  * pipeline_root
+  * work_root
+Telling OWL where to find the pipeline code to be used in Workflows and where to create scratch directory for input, output and intermediate files.
+
+Once a valid configuration is found, OWL reads config parameters from it and creates constants for them that can be accessed throughout the code (as public symbols of the owl.config Python module). The constant names have the form <uppercase config section>_<uppercase config parameter> (e.g. DIRECTORIES_PIPELINE_ROOT or DATABASE_DATABASE).
+
+Environment variables of the form OWL_<constant name> can be used to override any of the configuration parameters (e.g. OWL_DIRECTORIES_PIPELINE_ROOT or OWL_DATABASE_DATABASE).
+
+We need to define the way OWL connects to the database and the path to the pipeline code as well as the raw data files. OWL works with a number of different databases, from SQLite to SQL Server. For development and testing SQLite might be the best choice. For deployment, we need to use SQL Server.
+
+For SQLite (which was already installed on tlblazer):
+{{{
+tlblazer> vi /tlblazer/jwst/lib/python2.7/site-packages/owl/etc/owlrc
+#
+# OWL configuration file
+# 
+# OWL looks for its configuration file in these locations (in order):
+#   $HOME/.owlrc
+#   /etc/owlrc
+#   <owl install dir>/etc/owlrc
+# 
+[Database]
+# SQLAlchemy supported databases
+flavour = sqlite
+# Database host
+host = 
+# Database port
+# port =
+# Database reader user password
+password = 
+# Database reader user
+user = 
+# Name of he database to use
+database = /dev/null
+
+[Directories]
+# Where to find the pipeline code (for the Grid sake).
+pipeline_root = /tlblazer/jwst/bin
+# Path to the work directory.
+work_root = /dev/null
+}}}
+
+Define the following variables in your shell environment
+{{{
+setenv OWL_DATABASE_FLAVOUR sqlite
+setenv OWL_DATABASE_DATABASE /tmp/$USER.sqlite
+setenv OWL_DIRECTORIES_WORK_ROOT /tlblazer/$USER/work
+}}}
+
+Make sure that $OWL_DIRECTORIES_WORK_ROOT exists:
+{{{
+tlblazer> mkdir -p $OWL_DIRECTORIES_WORK_ROOT
+}}}
+
+
+Check if OWL works:
+{{{
+tlblazer> python -c "import owl"                                            
+tlblazer> 
+}}}
+
+So far so good. Now init the blackboard database and install the Condor job hooks. Almost done!
+
+
+
+=== Blackboard and Condor Job Hooks ===
+{{{
+tlblazer> blackboard-init.py
+tlblazer> ls -als /tmp/fpierfed.sqlite
+8 -rw-r--r-- 1 fpierfed dmstest 6144 Feb  6 19:11 fpierfed.sqlite
+tlblazer> sqlite3 /tmp/fpierfed.sqlite 
+SQLite version 3.6.20
+Enter ".help" for instructions
+Enter SQL statements terminated with a ";"
+sqlite> .schema
+CREATE TABLE blackboard (
+	"GlobalJobId" VARCHAR(255) NOT NULL, 
+	"MyType" VARCHAR(255), 
+	"TargetType" VARCHAR(255), 
+	"ProcId" INTEGER, 
+	"AutoClusterId" INTEGER, 
+	"AutoClusterAttrs" VARCHAR(255), 
+	"WantMatchDiagnostics" BOOLEAN, 
+	"LastMatchTime" DATETIME, 
+	"LastRejMatchTime" DATETIME, 
+	"NumJobMatches" INTEGER, 
+	"OrigMaxHosts" INTEGER, 
+	"LastJobStatus" INTEGER, 
+	"JobStatus" INTEGER, 
+	"EnteredCurrentStatus" DATETIME, 
+	"LastSuspensionTime" DATETIME, 
+	"CurrentHosts" INTEGER, 
+	"ClaimId" VARCHAR(255), 
+	"PublicClaimId" VARCHAR(255), 
+	"StartdIpAddr" VARCHAR(255), 
+	"RemoteHost" VARCHAR(255), 
+	"RemoteSlotID" INTEGER, 
+	"StartdPrincipal" VARCHAR(255), 
+	"ShadowBday" DATETIME, 
+	"JobStartDate" DATETIME, 
+	"JobCurrentStartDate" DATETIME, 
+	"NumShadowStarts" INTEGER, 
+	"JobRunCount" INTEGER, 
+	"ClusterId" INTEGER, 
+	"QDate" DATETIME, 
+	"CompletionDate" DATETIME, 
+	"Owner" VARCHAR(255), 
+	"RemoteWallClockTime" FLOAT, 
+	"LocalUserCpu" FLOAT, 
+	"LocalSysCpu" FLOAT, 
+	"RemoteUserCpu" FLOAT, 
+	"RemoteSysCpu" FLOAT, 
+	"ExitStatus" INTEGER, 
+	"NumCkpts_RAW" INTEGER, 
+	"NumCkpts" INTEGER, 
+	"NumJobStarts" INTEGER, 
+	"NumRestarts" INTEGER, 
+	"NumSystemHolds" INTEGER, 
+	"CommittedTime" DATETIME, 
+	"TotalSuspensions" INTEGER, 
+	"CumulativeSuspensionTime" INTEGER, 
+	"ExitBySignal" BOOLEAN, 
+	"CondorVersion" VARCHAR(255), 
+	"CondorPlatform" VARCHAR(255), 
+	"RootDir" VARCHAR(255), 
+	"Iwd" VARCHAR(255), 
+	"JobUniverse" INTEGER, 
+	"Cmd" VARCHAR(255), 
+	"MinHosts" INTEGER, 
+	"MaxHosts" INTEGER, 
+	"WantRemoteSyscalls" BOOLEAN, 
+	"WantCheckpoint" BOOLEAN, 
+	"RequestCpus" INTEGER, 
+	"JobPrio" INTEGER, 
+	"User" VARCHAR(255), 
+	"NiceUser" BOOLEAN, 
+	"JobNotification" INTEGER, 
+	"WantRemoteIO" BOOLEAN, 
+	"UserLog" VARCHAR(255), 
+	"CoreSize" INTEGER, 
+	"KillSig" VARCHAR(255), 
+	"Rank" FLOAT, 
+	"In" VARCHAR(255), 
+	"TransferIn" BOOLEAN, 
+	"Out" VARCHAR(255), 
+	"StreamOut" BOOLEAN, 
+	"Err" VARCHAR(255), 
+	"StreamErr" BOOLEAN, 
+	"BufferSize" INTEGER, 
+	"BufferBlockSize" INTEGER, 
+	"ShouldTransferFiles" VARCHAR(255), 
+	"WhenToTransferOutput" VARCHAR(255), 
+	"TransferFiles" VARCHAR(255), 
+	"ImageSize_RAW" INTEGER, 
+	"ImageSize" INTEGER, 
+	"ExecutableSize_RAW" INTEGER, 
+	"ExecutableSize" INTEGER, 
+	"DiskUsage_RAW" INTEGER, 
+	"DiskUsage" INTEGER, 
+	"RequestMemory" VARCHAR(255), 
+	"RequestDisk" VARCHAR(255), 
+	"Requirements" VARCHAR(255), 
+	"FileSystemDomain" VARCHAR(255), 
+	"JobLeaseDuration" INTEGER, 
+	"PeriodicHold" BOOLEAN, 
+	"PeriodicRelease" BOOLEAN, 
+	"PeriodicRemove" BOOLEAN, 
+	"OnExitHold" BOOLEAN, 
+	"OnExitRemove" BOOLEAN, 
+	"LeaveJobInQueue" BOOLEAN, 
+	"DAGNodeName" VARCHAR(255), 
+	"DAGParentNodeNames" VARCHAR(255), 
+	"DAGManJobId" INTEGER, 
+	"HookKeyword" VARCHAR(255), 
+	"Environment" TEXT, 
+	"Arguments" VARCHAR(255), 
+	"MyAddress" VARCHAR(255), 
+	"LastJobLeaseRenewal" DATETIME, 
+	"TransferKey" VARCHAR(255), 
+	"TransferSocket" VARCHAR(255), 
+	"ShadowIpAddr" VARCHAR(255), 
+	"ShadowVersion" VARCHAR(255), 
+	"UidDomain" VARCHAR(255), 
+	"OrigCmd" VARCHAR(255), 
+	"OrigIwd" VARCHAR(255), 
+	"StarterIpAddr" VARCHAR(255), 
+	"JobState" VARCHAR(255), 
+	"NumPids" INTEGER, 
+	"JobPid" INTEGER, 
+	"JobDuration" FLOAT, 
+	"ExitCode" INTEGER, 
+	"Dataset" VARCHAR(255), 
+	"Instances" INTEGER, 
+	PRIMARY KEY ("GlobalJobId"), 
+	CHECK ("WantMatchDiagnostics" IN (0, 1)), 
+	CHECK ("ExitBySignal" IN (0, 1)), 
+	CHECK ("WantRemoteSyscalls" IN (0, 1)), 
+	CHECK ("WantCheckpoint" IN (0, 1)), 
+	CHECK ("NiceUser" IN (0, 1)), 
+	CHECK ("WantRemoteIO" IN (0, 1)), 
+	CHECK ("TransferIn" IN (0, 1)), 
+	CHECK ("StreamOut" IN (0, 1)), 
+	CHECK ("StreamErr" IN (0, 1)), 
+	CHECK ("PeriodicHold" IN (0, 1)), 
+	CHECK ("PeriodicRelease" IN (0, 1)), 
+	CHECK ("PeriodicRemove" IN (0, 1)), 
+	CHECK ("OnExitHold" IN (0, 1)), 
+	CHECK ("OnExitRemove" IN (0, 1)), 
+	CHECK ("LeaveJobInQueue" IN (0, 1))
+);
+sqlite> select * from blackboard;
+sqlite> 
+}}}
+
+Since this SQLite database will be modified by the user condor, we need to make sure that it is at least group-writeable:
+{{{
+tlblazer> chmod 777 /tmp/fpierfed.sqlite
+}}}
+
+A bit overkill, I know :-)
+
+
+Now a tricky part: we need to install the Condor job hooks that OWL uses to create and update Blackboard entries each time we process a dataset. To do that we need to edit Condor local configuration (the hooks themselves are installed as part of OWL so we do not need to worry about them).
+{{{
+tlblazer> vi /etc/condor/condor_config.local
+##  What machine is your central manager?
+CONDOR_HOST = tlblazer.stsci.edu
+
+## Pool's short description
+COLLECTOR_NAME = Test JWST Pool
+
+##  When is this machine willing to start a job? 
+START = TRUE
+
+
+##  When to suspend a job?
+SUSPEND = FALSE
+
+
+##  When to nicely stop a job?
+##  (as opposed to killing it instantaneously)
+PREEMPT = FALSE
+
+
+##  When to instantaneously kill a preempting job
+##  (e.g. if a job is in the pre-empting stage for too long)
+KILL = FALSE
+
+##  This macro determines what daemons the condor_master will start and keep its watchful eyes on.
+##  The list is a comma or space separated list of subsystem names
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+
+#  Disable UID_DOMAIN check when submit a job
+TRUST_UID_DOMAIN = TRUE
+
+## Which machies are allowed to join the pool?
+HOSTALLOW_WRITE = *.stsci.edu
+HOSTALLOW_READ = *.stsci.edu
+
+
+# Job Hooks
+STARTER_INITIAL_UPDATE_INTERVAL = 1
+STARTER_ENVIRONMENT             = "DRMAA_LIBRARY_PATH=/tlblazer/jwst/lib/libdrmaa.so"
+STARTD_ENVIRONMENT              = "DRMAA_LIBRARY_PATH=/tlblazer/jwst/lib/libdrmaa.so"
+OWL_HOOK_PREPARE_JOB            = /tlblazer/jwst/bin/owl_job_hook.py
+OWL_HOOK_JOB_EXIT               = /tlblazer/jwst/bin/owl_job_hook.py
+OWL_HOOK_UPDATE_JOB_INFO        = /tlblazer/jwst/bin/owl_job_hook.py
+}}}
+
+Now restart Condor:
+{{{
+tlblazer> sudo /sbin/service condor stop
+tlblazer> sudo /sbin/service condor start
+}}}
+
+
+
+=== Test OWL: the BCW ===
+The Basic Calibration Workflow (BCW) is a simple example workflow useful to test OWL. You can find the BCW code and test data under owl/examples/bcw. OWL already comes configured with BCW templates. Just copy the sample datasets (i.e. the dataset_001 and dataset_002 directories under owl/example/bcw/data) wherever you want (just make sure that everybody has read access to them) and the three scripts in owl/example/bcw/bin to $OWL_DIRECTORIES_PIPELINE_ROOT or "pipeline_root" as defined in the owlrc file. In our case, /tlblazer/jwst/bin.
+{{{
+tlblazer> cp owl/example/bcw/bin/*.py /tlblazer/jwst/bin/
+tlblazer> mkdir -p /tlblazer/fpierfed/repository/bcw; cp -r owl/example/bcw/data/dataset_00* /tlblazer/fpierfed/repository/bcw/
+}}}
+
+Make sure that your OWL work directory is world-writable:
+{{{
+tlblazer> chmod 777 $OWL_DIRECTORIES_WORK_ROOT
+}}}
+
+And now, try:
+{{{
+tlblazer> process_dataset.py -r /tlblazer/fpierfed/repository/bcw/dataset_001 -i instrument1 -m modeA raw-000002
+DEBUG: drmaa_join_files: n
+DEBUG: drmaa_error_path: :/tlblazer/fpierfed/work/fpierfed_1328659981.702417/instrument1_modeA_raw-000002.dag.lib.err
+DEBUG: drmaa_output_path: :/tlblazer/fpierfed/work/fpierfed_1328659981.702417/instrument1_modeA_raw-000002.dag.lib.out
+DEBUG: drmaa_job_name: instrument1_modeA_raw-000002.dag
+DEBUG: drmaa_block_email: 1
+DEBUG: drmaa_native_specification: universe        = scheduler
+log             = instrument1_modeA_raw-000002.dag.dagman.log
+remove_kill_sig = SIGUSR1
+getenv          = True
+on_exit_remove	= ( ExitSignal =?= 11 || (ExitCode =!= UNDEFINED && ExitCode >=0 && ExitCode <= 2))
+copy_to_spool	= False
+arguments       = "-f -l . -Debug 3 -Lockfile instrument1_modeA_raw-000002.dag.lock -AutoRescue 1 -DoRescueFrom 0 -Dag instrument1_modeA_raw-000002.dag -CsdVersion $CondorVersion:' '7.4.2' 'May' '20' '2010' 'BuildID:' 'Fedora-7.4.2-1.fc13' '$"
+DEBUG: drmaa_wd: /tlblazer/fpierfed/work/fpierfed_1328659981.702417
+DEBUG: drmaa_v_env: В"
+DEBUG: drmaa_remote_command: /usr/bin/condor_dagman
+Dataset raw-000002 submitted as job tlblazer.stsci.edu#120.0
+}}}
+
+Check the status of the Condor jobs using condor_q. Also look into the newly created job-specific work directory (/tlblazer/fpierfed/work/fpierfed_1328659981.702417) for log files.
+
+The output of "process_dataset.py" tells us that our work directory (drmaa_wd) is /tlblazer/fpierfed/work/fpierfed_1328659981.702417 and that our BCW workflow has a Condor ID of tlblazer.stsci.edu#120.0, which means that it was submitted on tlblazer.stsci.edu as Condor job 120.
+
+
+
+=== SQL Server ===
+Connecting OWL to SQL Server requires the installation of three additional pieces of software:
+  * FreeTDS
+  * unixODBC (with the development libraries/headers)
+  * pyodbc
+On tlblazer, the first two were installed system-wide with RPMs:
+{{{
+tlblazer> rpm -qa | grep freetds
+freetds-0.91-1.el6.x86_64
+tlblazer> rpm -qa | grep -i odbc
+unixODBC-2.2.14-11.el6.x86_64
+unixODBC-devel-2.2.14-11.el6.x86_64
+}}}
+While pyodbc was installed using easy_install.
+
+These pieces of software need to be configured:
+{{{
+tlblazer> cat /etc/freetds.conf 
+#   $Id: freetds.conf,v 1.12 2007/12/25 06:02:36 jklowden Exp $
+#
+# This file is installed by FreeTDS if no file by the same 
+# name is found in the installation directory.  
+#
+# For information about the layout of this file and its settings, 
+# see the freetds.conf manpage "man freetds.conf".  
+
+# Global settings are overridden by those in a database
+# server specific section
+[global]
+        # TDS protocol version
+;	tds version = 4.2
+
+	# Whether to write a TDSDUMP file for diagnostic purposes
+	# (setting this to /tmp is insecure on a multi-user system)
+;	dump file = /tmp/freetds.log
+;	debug flags = 0xffff
+
+	# Command and connection timeouts
+;	timeout = 10
+;	connect timeout = 10
+	
+	# If you get out-of-memory errors, it may mean that your client
+	# is trying to allocate a huge buffer for a TEXT field.  
+	# Try setting 'text size' to a more reasonable limit 
+	text size = 64512
+
+# A typical Sybase server
+[egServer50]
+	host = symachine.domain.com
+	port = 5000
+	tds version = 5.0
+
+# A typical Microsoft server
+[egServer70]
+	host = ntmachine.domain.com
+	port = 1433
+	tds version = 7.0
+
+[jwdmsdevdbvm1]
+        host = jwdmsdevdbvm1.stsci.edu
+        port = 1433
+        tds version = 8.0
+	client charset = UTF-8
+}}}
+
+{{{
+tlblazer> cat /etc/odbc.ini 
+[ODBC]
+Trace       	= No
+Pooling 	= Yes
+
+[C3PO]
+Driver		= FreeTDS
+Description	= HST development, GMS development, OPR development
+Server		= c3po.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[CATLOG]
+Driver		= FreeTDS
+Description	= HST DMS operations
+Server		= catlog.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[GATOR]
+Driver		= FreeTDS
+Description	= GMS operations
+Server		= gator.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[HAL9000]
+Driver		= FreeTDS
+Description	= HST operations
+Server		= hal9000.sogs.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[PPSDEVDB]
+Driver		= FreeTDS
+Description	= JWST PPS Development
+Server		= ppsdevdb.stsci.edu
+Port		= 1433
+CPTimeout	= 120
+TDS_Version	= 8.0
+
+[REMEDYDB]
+Driver		= FreeTDS
+Description	= Help Desk, Leave Request System
+Server		= remedydb.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[ZEPPO]
+Driver		= FreeTDS
+Description	= replicated copies of HST operations outside of SOGS
+Server		= zeppo.stsci.edu
+Port		= 9992
+TDS_Version     = 5.0
+
+[DMSDEVDBVM1]
+Driver          = FreeTDS
+Description = Data Management System Development MS SQL Server
+Server          = DMSDEVDBVM1.stsci.edu
+Port            = 1433
+CPTimeout       = 120
+TDS_Version     = 8.0
+
+[DMSTESTDB1]
+Driver          = FreeTDS
+Description = Data Management System Development MS SQL Server
+Server          = DMSTESTDB1.stsci.edu
+Port            = 1433
+CPTimeout       = 120
+
+[DMSOPSDB1]
+Driver          = FreeTDS
+Description = Data Management System Development MS SQL Server
+Server          = DMSOPSDB1.stsci.edu
+Port            = 1433
+CPTimeout       = 120
+
+[MyDSN]
+Driver          = FreeTDS
+Description     = my dsn
+Database        = workflowDB
+Server          = jwdmsdevdbvm1
+}}}
+
+{{{
+tlblazer> cat /etc/odbcinst.ini 
+# Example driver definitinions
+#
+#
+
+# Included in the unixODBC package
+[PostgreSQL]
+Description	= ODBC for PostgreSQL
+Driver		= /usr/lib/libodbcpsql.so
+Setup		= /usr/lib/libodbcpsqlS.so
+FileUsage	= 1
+
+
+# Driver from the MyODBC package
+# Setup from the unixODBC package
+#[MySQL]
+#Description	= ODBC for MySQL
+#Driver		= /usr/lib/libmyodbc.so
+#Setup		= /usr/lib/libodbcmyS.so
+#FileUsage	= 1
+
+[SQL Server]
+Description = TDS driver (Sybase/MS SQL)
+Driver      = /usr/lib64/libtdsodbc.so.0
+Setup       = /usr/lib64/libtdsS.so
+# UsageCount              = 1
+CPTimeout   =
+CPReuse     = 
+
+[FreeTDS]
+Description = TDS driver (Sybase/MS SQL)
+Driver      = /usr/lib64/libtdsodbc.so.0
+Setup       = /usr/lib64/libtdsS.so
+# UsageCount              = 1
+CPTimeout   =
+CPReuse     =
+}}}
+
+Then, the owlrc:
+{{{
+tlblazer> cat /tlblazer/jwst/lib/python2.7/site-packages/owl/etc/owlrc 
+[Database]
+# SQLAlchemy supported databases
+flavour = mssql
+# Database host
+host = jwdmsdevdbvm1
+# Database port
+port = 1433
+# Database reader user password
+password = <POSSWORD HERE>
+# Database reader user
+user = <DB USERNAME HERE>
+# Name of he database to use
+database = workflowDB
+
+[Directories]
+# Where to find the pipeline code (for the Grid sake).
+pipeline_root = /hstdev/project/condor_bcw/bcw/python
+# Path to the work directory.
+work_root = /hstdev/project/condor_bcw/work
+}}}
+
+While this configuration should work for most installation, sometimes selecting or inserting UNICODE strings into SQL Server from Python does not work. In these cases, specifying "TDS_Version=7.2" in either owlrc as extra connection parameter or "tds version = 7.2" in freetds.conf solves the problem. For the example above, simply setting
+{{{
+port = 1433&TDS_Version=7.2
+}}}
+in owlrc solves the problem (but is not really elegant).
+
+
+
