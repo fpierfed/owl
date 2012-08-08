@@ -141,5 +141,5 @@ DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
                                                   DATABASE_DATABASE))
 
 if __name__ == '__main__' :
-    print sys_config
-    print local_config
+    print('System configuration file: %s' % (sys_config))
+    print('Local configuration file: %s' % (local_config))

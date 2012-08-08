@@ -16,20 +16,6 @@ Python 2.6 or later.
 
 Usage
     shell> owl_client.py -H <OWLD host> [-P <port>] <command> [<argument list>]
-
-
-Commands (Introspection)
- * list_methods
-    Return the list of all available OWL methods with their description.
-
-
-Commands (Query Mode)
- * resources_get_list
-    Reurn the list of all available compute reources managed by the given OWL
-    installation.
-
-Commands (Command Mode)
-
 """
 import functools
 import json

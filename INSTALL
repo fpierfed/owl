@@ -22,6 +22,6 @@ Installing OWL as a developer
 	# install OWL
 	python setup.py install
 
-	# edit the config file
-	$EDITOR ` python -m owl.config `
+	# see where the config files are located.
+	python -m owl.config
 
