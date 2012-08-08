@@ -68,19 +68,27 @@ if __name__ == "__main__":
     )
 
 
+# Understand where the scripts were installed. Python has a special treatment of
+# Darwin/Mac OS X (see distutils/install.py:install.finalize_options())
+bin_dir = os.path.join(sys.prefix, 'bin'),
+if(sys.platform == 'darwin'):
+    from sysconfig import get_config_var
+    bin_dir = get_config_var('BINDIR')
+
+
     print("""
 
 
 OWL %(version)s
 
 
-The full OWL distribution was installed under
+The full OWL distribution was installed (by default) under
     %(install_dir)s/
 
-The OWL command-line tools are typically available under
+The OWL command-line tools are (by default) available under
     %(bin_dir)s/
 
-Configuration file(s) are are typically available under
+Configuration file(s) are (by default) available under
     %(config_dir)s/
 
 Please customize the default configuration by creating an owlrc.local file in
@@ -89,7 +97,7 @@ modify any pre-existing owlrc.local but archived any pre-existing owlrc file
 before writing the new one.
 """) % {'config_dir': dst,
         'install_dir': sys.prefix,
-        'bin_dir': os.path.join(sys.prefix, 'bin'),
+        'bin_dir': bin_dir,
         'version': __version__}
 
 
