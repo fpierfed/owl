@@ -128,6 +128,7 @@ def _run_and_get_stdout(args, timeout=TIMEOUT):
             return(None)
 
         # Everything is cool. Return the file name.
+        f.flush()
         f.close()
         return(file_name)
     # If the process is still tunning at this point, kill it. Remove the file.
@@ -235,7 +236,7 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
         arg = job_id
         # Then check if it is global.
         if(is_globaljobid(job_id)):
-            [schedd, job_id, _] = _parse_globaljobid(job_id)
+            [schedd, arg, _] = _parse_globaljobid(job_id)
             schedd_argv = ['-n', schedd]
         # Then, if it is neither global not local, error out.
         elif(not is_localjobid(job_id)):
@@ -245,7 +246,7 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
     else:
         return(255)
 
-    # Invoke condot_hold.
+    # Invoke cmd.
     return(_run([which(cmd)] + schedd_argv + extra_argv + [str(arg)], timeout))
 
 
@@ -312,6 +313,10 @@ def condor_getprio(job_id):
     Return the job priority as positive integer (or 0 , which is the default job
     priority in Condor) or None in case of error.
 
+    Note: if a job ProcId is omitted (i.e. only ClusterId is specified) and the
+    job is part of a cluster, then only the priority of the first job in the
+    cluster is returned (i.e. the priority of ClusterId.0).
+
     Return
         job priority as positive integer
         None if the job could not be found.
@@ -325,18 +330,20 @@ def condor_getprio(job_id):
     stdout = _run_and_get_stdout([which('condor_q')] +
                                   schedd_argv +
                                   ['-format',
-                                   '"%d\n"',
+                                   '%d\n',
                                    'JobPrio',
                                    str(job_id)])
     if(stdout is None):
         return
+
+    priority = None
     res = open(stdout).readline().strip()
-    if(not res):
-        return
-    try:
-        priority = int(res)
-    except (ValueError, TypeError):
-        return
+    if(res):
+        try:
+            priority = int(res)
+        except (ValueError, TypeError):
+            pass
+    os.remove(stdout)
     return(priority)
 
 
