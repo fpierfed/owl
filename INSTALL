@@ -17,7 +17,7 @@ Installing OWL as a developer
 	cd .../owl
 
 	# install the third party software that is required
-	pip install -r developer_requirements.txt
+	pip install -r requirements.txt
 
 	# install OWL
 	python setup.py install
