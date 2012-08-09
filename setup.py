@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
 # Understand where the scripts were installed. Python has a special treatment of
 # Darwin/Mac OS X (see distutils/install.py:install.finalize_options())
-bin_dir = os.path.join(sys.prefix, 'bin'),
+bin_dir = os.path.join(sys.prefix, 'bin')
 if(sys.platform == 'darwin'):
     from sysconfig import get_config_var
     bin_dir = get_config_var('BINDIR')
