@@ -31,13 +31,13 @@ def _parse_classads(stdout):
     for line in stdout:
         if(line.strip() == '' and ad):
             # New ClassAd: parse the last one and start a new one.
-            ads.append(ClassAd.newFromClassAd(ad))
+            ads.append(ClassAd.new_from_classad(ad))
             ad = ''
             continue
         ad += line
     # The file ended and hence we must have a last ClassAd: parse it and quit.
     if(ad):
-        ads.append(ClassAd.newFromClassAd(ad))
+        ads.append(ClassAd.new_from_classad(ad))
     return(ads)
 
 

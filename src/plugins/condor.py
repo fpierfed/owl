@@ -24,24 +24,29 @@ arguments       = "-f -l . -Debug 3 -Lockfile {{ dag_name }}.lock -AutoRescue 1 
 
 
 
-def createJobTemplate(drmaaSession, dagName, workDir):
-    dagMan = which('condor_dagman')
-    if(not dagMan):
+def create_job_template(drmaa_session, dag_name, work_dir):
+    """
+    Create a DRMAA Condor DAGMan job given the already instantiated OWL Workflow
+    templates for `dag_name` found in `work_dir`. Return the DRMAA job as a
+    DRMAA template (confusing terminology, I know).
+    """
+    dagman = which('condor_dagman')
+    if(not dagman):
         raise(Exception('Unable to find condor_dagman in $PATH'))
 
-    ad = drmaaSession.createJobTemplate()
-    ad.remoteCommand = dagMan
-    ad.workingDirectory = workDir
-    ad.nativeSpecification = NATIVE_SPEC_TMPL.render(dag_name=dagName)
-    ad.blockEmail = True
-    ad.jobName = dagName
-    ad.outputPath = ':' + os.path.join(workDir, dagName + '.lib.out')
-    ad.errorPath = ':' + os.path.join(workDir, dagName + '.lib.err')
-    ad.joinFiles = False
-    return(ad)
+    drmaa_tmplt = drmaa_session.createJobTemplate()
+    drmaa_tmplt.remoteCommand = dagman
+    drmaa_tmplt.workingDirectory = work_dir
+    drmaa_tmplt.nativeSpecification = NATIVE_SPEC_TMPL.render(dag_name=dag_name)
+    drmaa_tmplt.blockEmail = True
+    drmaa_tmplt.jobName = dag_name
+    drmaa_tmplt.outputPath = ':' + os.path.join(work_dir, dag_name + '.lib.out')
+    drmaa_tmplt.errorPath = ':' + os.path.join(work_dir, dag_name + '.lib.err')
+    drmaa_tmplt.joinFiles = False
+    return(drmaa_tmplt)
 
 
-def submit(dagName, workDir, wait=False):
+def submit(dag_name, work_dir, wait=False):
     """
     Create a DRMAA session and submit the DAGMan job within it. If wait=False,
     submit the job asyncronously. Otherwise, wait for the job to complete and
@@ -58,35 +63,35 @@ def submit(dagName, workDir, wait=False):
     session.initialize()
 
     # Create the DRMAA ClassAd.
-    ad = createJobTemplate(session, dagName, workDir)
+    drmaa_tmplt = create_job_template(session, dag_name, work_dir)
 
     # Submit the job.
-    jobId = session.runJob(ad)
+    job_id = session.runJob(drmaa_tmplt)
 
     # Wait?
     if(wait):
         try:
-            err = session.wait(jobId, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+            err = session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
         except drmaa.errors.InvalidArgumentException:
             # This is due to the fact that Condor drmaa 1.6 set stat=200 when
             # exit code = 0 (see WISDOM file in drmaa-1.6).
             err = 0
     # Cleanup.
-    session.deleteJobTemplate(ad)
+    session.deleteJobTemplate(drmaa_tmplt)
 
     # Close the DRMAA session.
     session.exit()
-    # Mannage jobId so that it corresponds more closely to what is stored in the
-    # database:
-    #   <hostname>#<cluster id>.<job id> instead of
-    #   <hostname>.<cluster id>.<job id> that we have here.
+    # Mannage job_id so that it corresponds more closely to what is stored in
+    # the database:
+    #   <hostname>#<ClusterId>.<ProcId> instead of
+    #   <hostname>.<ClusterId>.<ClusterId> that we have here.
     # The database version of this id appends #<timestamp> to what we have here
     # as well as replacing the hostname with the fully qualified host name.
-    hostname, clusterId, jobId = jobId.rsplit('.', 2)
-    sanitizedId = '%s#%s.%s' % (hostname, clusterId, jobId)
+    hostname, cluster_id, proc_id = job_id.rsplit('.', 2)
+    sanitized_id = '%s#%s.%s' % (hostname, cluster_id, proc_id)
     if(wait):
-        return((sanitizedId, err))
-    return(sanitizedId)
+        return((sanitized_id, err))
+    return(sanitized_id)
 
 
 

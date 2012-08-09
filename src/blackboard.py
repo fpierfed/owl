@@ -118,8 +118,6 @@ column:
     Instances = 4
 """
 import datetime
-import os
-import urllib
 import elixir
 from sqlalchemy import desc
 

@@ -12,7 +12,12 @@ import plugins
 
 
 
-def _getNumberOfCCDs(repository, dataset):
+def _get_number_of_ccds(repository, dataset):
+    """
+    Return the number of extensions/CCDs in the given dataset (i.e. in the FITS
+    file `repository`/`dataset`.fits). In this case we assume that the FITS file
+    is simply a BCW text file and its CCDs are lines in the file.
+    """
     lines = [l
              for l in open(os.path.join(repository,
                                         dataset + '.fits')).readlines()
@@ -20,7 +25,7 @@ def _getNumberOfCCDs(repository, dataset):
     return(len(lines))
 
 
-def _getNumberOfExposures(repository, dataset):
+def _get_number_of_exposures(repository, dataset):
     """
     Return the number of _raw.fits files in the given ACS dataset/visit.
     """
@@ -34,9 +39,12 @@ def _getNumberOfExposures(repository, dataset):
 
 
 class Workflow(object):
-    def __init__(self, templateRoot):
+    """
+    Workflow: a templated DAG.
+    """
+    def __init__(self, template_root):
         # Init the template engine.
-        loader = jinja2.FileSystemLoader(templateRoot)
+        loader = jinja2.FileSystemLoader(template_root)
         env = jinja2.Environment(loader=loader)
 
         # Load all the available templates.
@@ -51,74 +59,89 @@ class Workflow(object):
         return
 
 
-    def execute(self, codeRoot, repository, dataset, workDir=None,
-                flavour='condor', extraEnvironment={}, wait=False):
+    def execute(self, code_root, repository, dataset, work_dir=None,
+                flavour='condor', extra_env=None, wait=False):
+        """
+        Execute the workflow by creating a temporary directory, rendering the
+        templates and submitting the newly instantiated workflow to the
+        appropriate batch job execution system.
+        """
+        if(extra_env is None):
+            extra_env = {}
+
         # Get any extra keyword we might need for our templates.
-        extraKw = self.getExtraKeywords(codeRoot, repository, dataset, workDir,
-                                         flavour, extraEnvironment)
+        extrakwds = self.get_extra_keywords(code_root, repository, dataset,
+                                            work_dir, flavour, extra_env)
 
         # Create the variable dictionary that the templates are going to need.
-        kw = {'code_root': codeRoot,
-              'repository': repository,
-              'dataset': dataset}
-        # Extend/override the content of kw with that of extraKw.
-        kw.update(extraKw)
+        kwds = {'code_root': code_root,
+                'repository': repository,
+                'dataset': dataset}
+        # Extend/override the content of kwds with that of extrakwds.
+        kwds.update(extrakwds)
 
         # Create a temporary directory unless one was specified.
-        if(not workDir):
-            workDir = tempfile.mkdtemp()
+        if(not work_dir):
+            work_dir = tempfile.mkdtemp()
 
         # If it does not exist, try and create it. Do not try too hard ;-)
-        if(not os.path.isdir(workDir)):
-            os.makedirs(workDir)
+        if(not os.path.isdir(work_dir)):
+            os.makedirs(work_dir)
 
         # Render the templates for the given dataset and write them out to
-        # workDir. By convention we rename the templates to make them dataset
+        # work_dir. By convention we rename the templates to make them dataset
         # specific: root_<dataset>.extension
         #   e.g. processMef_J9AM01071.job
-        for t in self.templates:
+        for tmplt in self.templates:
             # Make it dataset specific
-            (root, ext) = os.path.splitext(t.name)
-            fileName = root + '_' + dataset + ext
+            (root, ext) = os.path.splitext(tmplt.name)
+            file_name = root + '_' + dataset + ext
 
-            f = open(os.path.join(workDir, fileName), 'w')
-            f.write(t.render(**kw))
-            f.write('\n')
-            f.close()
+            fid = open(os.path.join(work_dir, file_name), 'w')
+            fid.write(tmplt.render(**kwds))
+            fid.write('\n')
+            fid.close()
 
         # Update the name of the dag accordingly
         (root, ext) = os.path.splitext(self.dag.name)
-        dagName = root + '_' + dataset + ext
+        dag_name = root + '_' + dataset + ext
 
         # Now submit the whole workflow via DRMAA.
-        return(self._submit(dagName, workDir, flavour, extraEnvironment, wait))
+        return(self._submit(dag_name, work_dir, flavour, extra_env, wait))
 
 
-    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour,
-                         extraEnvironment):
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
+        """
+        Customize the workflow from dataset and/or the environment. Return a
+        dictionary of extra keywords to use to render the workflow templates.
+        """
         return({})
 
 
-    def _submit(self, dagName, workDir, flavour='condor', extraEnvironment={},
+    def _submit(self, dag_name, work_dir, flavour='condor', extra_env=None,
                 wait=False):
         """
         Simply delegate the work to the appropriate plugin. If wait==True and
         flavour=='condor', wait for the job to complete and return its exit code
         as well as its id.
         """
+        if(extra_env is None):
+            extra_env = {}
+
         if(flavour != 'condor'):
             wait = False
 
-        # If we are asked to (by specifying extraEnvironment) agument the user
+        # If we are asked to (by specifying extra_env) agument the user
         # environment.
-        if(extraEnvironment):
-            os.environ.update(extraEnvironment)
+        if(extra_env):
+            os.environ.update(extra_env)
 
         plugin = getattr(plugins, flavour)
 
         if(wait):
-            return(plugin.submit(dagName, workDir, wait=True))
-        return(plugin.submit(dagName, workDir))
+            return(plugin.submit(dag_name, work_dir, wait=True))
+        return(plugin.submit(dag_name, work_dir))
 
 
 
@@ -126,9 +149,9 @@ class BcwWorkflow(Workflow):
     """
     Simple BCW workflow.
     """
-    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour,
-                         extraEnvironment):
-        return({'num_ccds': _getNumberOfCCDs(repository, dataset)})
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
+        return({'num_ccds': _get_number_of_ccds(repository, dataset)})
 
 
 
@@ -136,8 +159,8 @@ class BcwIrodsWorkflow(Workflow):
     """
     Simple BCW+iRODS workflow.
     """
-    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour,
-                         extraEnvironment):
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
         # Root iRODS collection.
         root = '/fooZone/home/foo'
 
@@ -148,10 +171,10 @@ class BcwIrodsWorkflow(Workflow):
             repository = repository[1:]
 
         # Derive the number of CCDs.
-        n = _getNumberOfCCDsFromIRods(repository, dataset)
+        number = _get_number_of_ccds_from_irods(repository, dataset)
 
-        return({'num_ccds': n,
-                'work_dir': workDir,
+        return({'num_ccds': number,
+                'work_dir': work_dir,
                 'user': 'foo',
                 'zone': 'fooZone',
                 'password': 'condor',
@@ -166,9 +189,9 @@ class AcsWorkflow(Workflow):
     """
     HLA/ACS workflow.
     """
-    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour,
-                         extraEnvironment):
-        return({'num_exposures': _getNumberOfExposures(repository, dataset)})
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
+        return({'num_exposures': _get_number_of_exposures(repository, dataset)})
 
 
 
@@ -176,24 +199,24 @@ class AcsSimpleWorkflow(Workflow):
     """
     ACS Simple workflow.
     """
-    def getExtraKeywords(self, codeRoot, repository, dataset, workDir, flavour,
-                         extraEnvironment):
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
         # Exposures are *_raw.fits files inside repository/dataset. Just return
         # the list of exposure root names.
-        dir = os.path.join(repository, dataset)
-        return({'exposures': [f[:-9] for f in os.listdir(dir) \
+        directory = os.path.join(repository, dataset)
+        return({'exposures': [f[:-9] for f in os.listdir(directory) \
                               if f.endswith('_raw.fits')]})
 
 
 
-def _getNumberOfCCDsFromIRods(repository, dataset,
-                              exe='/jwst/bin/irods.py',
-                              user='foo',
-                              zone='fooZone',
-                              password='condor',
-                              server='jwdmsdevvm2.stsci.edu',
-                              port=1247,
-                              root='/fooZone/home/foo'):
+def _get_number_of_ccds_from_irods(repository, dataset,
+                                   exe='/jwst/bin/irods.py',
+                                   user='foo',
+                                   zone='fooZone',
+                                   password='condor',
+                                   server='jwdmsdevvm2.stsci.edu',
+                                   port=1247,
+                                   root='/fooZone/home/foo'):
     """
     Fetch dataset from iRods and count the number of CCDs in it. Return that
     number.
@@ -217,9 +240,9 @@ def _getNumberOfCCDsFromIRods(repository, dataset,
     if(err):
         raise(Exception('Unable to access %s with iRODS' % (dataset)))
 
-    n = _getNumberOfCCDs(*os.path.split(path))
+    number = _get_number_of_ccds(*os.path.split(path))
     os.remove(path + '.fits')
-    return(n)
+    return(number)
 
 
 

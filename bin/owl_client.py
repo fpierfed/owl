@@ -29,6 +29,9 @@ OWLD_PORT = 9999
 
 
 class OwlClient(object):
+    """
+    Proxy object for a remote OWLD.
+    """
     def __init__(self, addr, port=OWLD_PORT):
         self.addr = addr
         self.port = port
@@ -39,6 +42,9 @@ class OwlClient(object):
         return(functools.partial(self.execute, name))
 
     def execute(self, *argv, **kwds):
+        """
+        Internal method: you do not want to know.
+        """
         # Connect to (addr, port) and send argv in JSON format.
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

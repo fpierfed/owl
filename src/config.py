@@ -46,10 +46,9 @@ present in either owlrc or owlrc.local.
 # Parse the config file and specify defaults inline.
 import ConfigParser
 import os
-import shutil
 import sys
 
-from utils import dbConnectionStr
+from utils import db_connection_str
 
 
 
@@ -133,12 +132,12 @@ DIRECTORIES_TEMPLATE_ROOT = env.get('OWL_DIRECTORIES_TEMPLATE_ROOT',
 
 # Finally the database connection string.
 DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
-                                  dbConnectionStr(DATABASE_FLAVOUR,
-                                                  DATABASE_USER,
-                                                  DATABASE_PASSWORD,
-                                                  DATABASE_HOST,
-                                                  DATABASE_PORT,
-                                                  DATABASE_DATABASE))
+                                  db_connection_str(DATABASE_FLAVOUR,
+                                                    DATABASE_USER,
+                                                    DATABASE_PASSWORD,
+                                                    DATABASE_HOST,
+                                                    DATABASE_PORT,
+                                                    DATABASE_DATABASE))
 
 if __name__ == '__main__' :
     print('System configuration file: %s' % (sys_config))

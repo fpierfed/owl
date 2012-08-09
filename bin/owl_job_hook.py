@@ -20,61 +20,74 @@ import sys
 
 
 
-def getOwlEnvironment(ad):
-    env = {}
+def get_owl_nvironment(job_ad):
+    """
+    Look into the given job ClassAd for any extra environment variables that
+    might be defined there but not in our shell environment. Return the
+    corresponding Python {key: val} dictionary that we will then use to agument
+    our environment.
+    """
+    environment = {}
 
     # Find the Environment = ... line.
-    jobEnvStr = ''
-    for line in ad.split('\n'):
+    job_env_str = ''
+    for line in job_ad.split('\n'):
         if(line.startswith('Environment = ')):
-            jobEnvStr = line.split('Environment = ', 1)[1]
-            jobEnvStr = jobEnvStr.strip()
-            jobEnvStr = jobEnvStr[1:-1]
+            job_env_str = line.split('Environment = ', 1)[1]
+            job_env_str = job_env_str.strip()
+            job_env_str = job_env_str[1:-1]
 
     # Replace ' ' with a placeholder.
-    jobEnvStr = jobEnvStr.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
-    tokens = jobEnvStr.split()
+    job_env_str = job_env_str.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
+    tokens = job_env_str.split()
     for token in tokens:
         # If this fails is because we have screwed up badly and we need to know.
         key, val = token.split('=', 1)
         if(key.startswith('OWL')):
-            env[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
-    return(env)
+            environment[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
+    return(environment)
 
 
 
-def setupLogger(name):
+def setup_logger(name):
+    """
+    Create and customize our logger.
+    """
     # Get the path to the GRID-provided temp directory.
-    tmpPath = '/tmp'
-    for k in ('TMP', 'TMPDIR', 'TEMP'):
-        if(os.environ.has_key(k)):
-            tmpPath = os.environ[k]
+    tmp_path = '/tmp'
+    for key in ('TMP', 'TMPDIR', 'TEMP'):
+        if(os.environ.has_key(key)):
+            tmp_path = os.environ[key]
             break
 
-    logName = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
-    LOG_FILE_NAME = os.path.join(tmpPath, logName)
+    log_name = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
+    LOG_FILE_NAME = os.path.join(tmp_path, log_name)
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     LOG_LEVEL = logging.DEBUG
 
     # Configure logging.
-    logger = logging.getLogger(name)
-    logger.setLevel(LOG_LEVEL)
+    mylogger = logging.getLogger(name)
+    mylogger.setLevel(LOG_LEVEL)
     fh = logging.FileHandler(LOG_FILE_NAME)
     fh.setLevel(logging.DEBUG)
     formatter = logging.Formatter(LOG_FORMAT)
     fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    return(logger)
+    mylogger.addHandler(fh)
+    return(mylogger)
 
 
 
-def createOrUpdateBlackboardEntry(ad):
+def update_blackboard_entry(job_ad):
+    """
+    Update the Blackboard entry corresponding to the given Job ClassAd and
+    create it if it is not there.
+    """
     from owl.classad import Job
     from owl import blackboard
 
 
     # Create a Job instance from the ClassAd.
-    job = Job.newFromClassAd(ad)
+    job = Job.new_from_classad(job_ad)
 
     # Now, we could be in a rescue DAG, meaning that the blackboard entry might
     # already be there. If this is the case, we just update that entry and not
@@ -94,13 +107,16 @@ def createOrUpdateBlackboardEntry(ad):
     return
 
 
-def closeBlackboardEntry(ad):
+def close_blackboard_entry(job_ad):
+    """
+    Close the Blackboard entry corresponding to the given Job ClassAd.
+    """
     from owl.classad import Job
     from owl import blackboard
 
 
     # Create a Job instance from the ClassAd.
-    job = Job.newFromClassAd(ad)
+    job = Job.new_from_classad(job_ad)
 
     # Close the Blackboard entry corresponding to job.
     blackboard.closeEntry(job)
@@ -116,11 +132,11 @@ if(__name__ == '__main__'):
 
 
     # Setup logging.
-    logger = setupLogger('owl_blackboard_hooks')
+    logger = setup_logger('owl_blackboard_hooks')
 
     # Read the raw ClassAd from STDIN and create a Job instance.
     logger.debug("Parsing STDIN.")
-    ad = sys.stdin.read()
+    classad = sys.stdin.read()
 
     # Determine the role of this hook.
     role = None
@@ -131,7 +147,7 @@ if(__name__ == '__main__'):
         exitReason = None
         n = 0
         for attr in EXTRA_ATTRS:
-            if(attr + ' =' in ad):
+            if(attr + ' =' in classad):
                 n += 1
         if(n > len(EXTRA_ATTRS) / 2.):
             role = 'update_job'
@@ -141,27 +157,27 @@ if(__name__ == '__main__'):
 
     # Agument the (very restricted) environment with OWL specific variables
     # defined in the job/ClassAd Environment (if any).
-    owlEnv = getOwlEnvironment(ad)
+    owlEnv = get_owl_nvironment(classad)
     for k in owlEnv.keys():
         v = owlEnv[k]
         logger.debug('Adding ENV(%s) = %s' % (k, v))
         os.environ[k] = v
 
-    from owl.config import *
+    from owl.config import DATABASE_CONNECTION_STR
     logger.debug('OWL DATABASE_CONNECTION_STR = %s' % (DATABASE_CONNECTION_STR))
 
 
     if(role == 'job_exit'):
         # Close the Blackboard entry and be happy.
-        fn = closeBlackboardEntry
+        fn = close_blackboard_entry
     else:
         # create (or uodate if already there) a Blackboard entry for job.
-        fn = createOrUpdateBlackboardEntry
+        fn = update_blackboard_entry
 
     # What are you waiting for?
     logger.debug('Upodating the blackboard.')
     try:
-        fn(ad)
+        fn(classad)
     except:
         logger.exception('Error updating the database.')
     else:

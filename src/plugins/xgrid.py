@@ -120,7 +120,7 @@ def submit(dagName, workDir):
     # All the files we need (the .dag file and the .job files) are in `workDir`
     # and have the names defined in the .dag file (which we are given as
     # `dagName`). So, first thing is to parse `dagName`.
-    dag = DAG.newFromDAG(open(os.path.join(workDir, dagName)).read(), workDir)
+    dag = DAG.new_from_classad(open(os.path.join(workDir, dagName)).read(), workDir)
 
     # Extract the dataset name. We assume dagName = dataset.dag
     dataset, ext = os.path.splitext(dagName)

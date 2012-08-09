@@ -10,26 +10,35 @@ from classad import Job
 
 
 def _extract_inouts(arg_string):
+    """
+    Extract the name of the input and output arguments from a command-line str
+    assuming a simple convention:
+        -i bla means that bla is an input argument.
+        -o bla means that bla is an output.
+    Used in the Makefile plugin only... and it is a hack.
+    """
     args = arg_string.strip().split()
-    input = ''
-    output = ''
+    in_args = ''
+    out_args = ''
 
     nargs = len(args)
     for i in range(nargs):
         if(args[i] == '-i' and i < nargs):
-            input = args[i+1]
+            in_args = args[i+1]
         elif(args[i] == '-o' and i < nargs):
-            output = args[i+1]
-    return(input, output)
+            out_args = args[i+1]
+    return(in_args, out_args)
 
 
 
-def _parse(dag, dir):
-    # A DAG syntax is pretty simple
-    # JOB JOBNAME JOBSCRIPT
-    # PARENT JOBNAME CHILD JOBNAME
-    # We do not support DATA jobs quite yet.
-    dag = os.path.join(dir, dag)
+def _parse(dag, directory):
+    """
+    A DAG syntax is pretty simple
+        JOB JOBNAME JOBSCRIPT
+        PARENT JOBNAME CHILD JOBNAME
+    We do not support DATA jobs quite yet.
+    """
+    dag = os.path.join(directory, dag)
     lines = [l.strip() for l in dag.split('\n') if l.strip()]
 
     # Nodes.
@@ -38,9 +47,9 @@ def _parse(dag, dir):
         if(not line.startswith('JOB')):
             continue
 
-        typ, name, script = line.split()
+        _, name, script = line.split()
         nodes[name] = Node(name=name,
-                           script=os.path.join(dir, script),
+                           script=os.path.join(directory, script),
                            children=[],
                            parents=[])
 
@@ -56,12 +65,14 @@ def _parse(dag, dir):
         parent = nodes[tokens[1]]
         children = [nodes[n] for n in tokens[3:]]
 
-        # print('%s is parent of %s' % (parent.name, str([c.name for c in children])))
+        # print('%s is parent of %s' \
+        #         % (parent.name, str([c.name for c in children])))
         parent.children = children
         for child in children:
             # print('%s is child of %s' % (child.name, parent.name))
             child.parents.append(parent)
-            # print('%s parents are %s' % (child.name, str([p.name for p in child.parents])))
+            # print('%s parents are %s' \
+            #         % (child.name, str([p.name for p in child.parents])))
     return(nodes.values())
 
 
@@ -69,7 +80,8 @@ def _escape(arg_string):
     """
     Shell escape arguments.
 
-    http://stackoverflow.com/questions/35817/how-to-escape-os-system-calls-in-python
+    http://stackoverflow.com/ \
+        questions/35817/how-to-escape-os-system-calls-in-python
     """
     args = arg_string.strip().split()
     return(' '.join(["'" + s.replace("'", "'\\''") + "'" for s in args]))
@@ -77,11 +89,19 @@ def _escape(arg_string):
 
 
 class Node(object):
-    def __init__(self, name, script, children=[], parents=[]):
-        ad = open(script).read()
+    """
+    A node in the DAG.
+    """
+    def __init__(self, name, script, children=None, parents=None):
+        if(children is None):
+            children = []
+        if(parents is None):
+            parents = []
+
+        classad = open(script).read()
 
         self.name = name
-        self.job = Job.newFromClassAd(ad)
+        self.job = Job.new_from_classad(classad)
         self.children = children
         self.parents = parents
         return
@@ -89,12 +109,15 @@ class Node(object):
 
 
 class DAG(object):
+    """
+    A full DAG (i.e. a directed graph with no loops).
+    """
     @classmethod
-    def newFromDAG(cls, dag, dir):
+    def new_from_dag(cls, dag, directory):
         """
         Given a DAG text, parse it and create the corresponding DAG instance.
         """
-        return(cls(nodes=_parse(dag, dir)))
+        return(cls(nodes=_parse(dag, directory)))
 
     def __init__(self, nodes):
         self.nodes = nodes

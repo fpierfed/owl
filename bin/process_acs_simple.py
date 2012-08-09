@@ -35,9 +35,9 @@ OPTIONS
     -e,--env=KEY=VAL(,KEY=VAL)*
 
 '''
-TEMPLATE_ROOT = config.DIRECTORIES_TEMPLATE_ROOT
-CODE_ROOT = config.DIRECTORIES_PIPELINE_ROOT
-WORK_ROOT = config.DIRECTORIES_WORK_ROOT
+TEMPLATE_ROOT = getattr(config, 'DIRECTORIES_TEMPLATE_ROOT')
+CODE_ROOT = getattr(config, 'DIRECTORIES_PIPELINE_ROOT')
+WORK_ROOT = getattr(config, 'DIRECTORIES_WORK_ROOT')
 INSTRUMENT = 'acs'
 MODE = 'simple'
 
@@ -45,34 +45,38 @@ MODE = 'simple'
 
 
 
-def process(datasets, repository, templateRoot, codeRoot=CODE_ROOT, extraEnv={},
-            workRoot=WORK_ROOT, middleware='condor', verbose=False):
+def process(datasets, repository, template_root, code_root=CODE_ROOT,
+            extra_env=None, work_root=WORK_ROOT, middleware='condor',
+            verbose=False):
     """
     Given a list of datasets (i.e. association names) to process and a directory
     of templates, for each association determine the number of exposures, render
     the full workflow template set and submit the instantiated workflow to the
     grid. Return immediately upon workflow submission.
     """
-    # Create a simple work directory path: workRoot/<user>_<timestamp>
-    dirName = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), time.time())
-    workDir = os.path.join(workRoot, dirName)
+    if(extra_env is None):
+        extra_env = {}
+
+    # Create a simple work directory path: work_root/<user>_<timestamp>
+    dir_name = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), time.time())
+    work_dir = os.path.join(work_root, dir_name)
 
     for dataset in datasets:
         # Create a instrument/mode Workflow instance (dataset independent)...
-        wflow = workflow.AcsSimpleWorkflow(templateRoot=templateRoot)
+        wflow = workflow.AcsSimpleWorkflow(template_root=template_root)
         # ... and submit it to the grid (for this particular piece of data).
-        _id = wflow.execute(codeRoot=codeRoot,
+        _id = wflow.execute(code_root=code_root,
                             repository=repository,
                             dataset=dataset,
-                            workDir=workDir,
+                            work_dir=work_dir,
                             flavour=middleware)
         print('Dataset %s submitted as job %s' % (dataset, _id))
-        print('  Work directory: %s' % (workDir))
+        print('  Work directory: %s' % (work_dir))
     return(0)
 
 
 
-def _parseExtraEnvironmentInfo(rawUSerEnvInfo):
+def _parse_extra_environment_info(raw_user_env):
     """
     Given a string of the form
 
@@ -87,7 +91,7 @@ def _parseExtraEnvironmentInfo(rawUSerEnvInfo):
     are assumed to be strings. No arrays, list, tuples are supported. The
     returned dictionary is assumed to be usable to agument the user environment.
     """
-    def parseToken(token):
+    def parse_token(token):
         """
         Parse a
             KEY=VAL
@@ -99,10 +103,10 @@ def _parseExtraEnvironmentInfo(rawUSerEnvInfo):
         items = token.split('=', 1)
         return((items[0].strip(), items[1].strip()))
 
-    if(not rawUSerEnvInfo):
+    if(not raw_user_env):
         return({})
 
-    return(dict(map(parseToken, rawUSerEnvInfo.split(','))))
+    return(dict(map(parse_token, raw_user_env.split(','))))
 
 
 
@@ -163,14 +167,14 @@ if(__name__ == '__main__'):
         sys.exit(2)
 
     # Now see if we have to do any environment variable parsing/setting up.
-    env = _parseExtraEnvironmentInfo(options.env)
+    env = _parse_extra_environment_info(options.env)
 
     # Run!
     sys.exit(process(datasets=args,
                      repository=options.repository,
-                     templateRoot=templateDir,
+                     template_root=templateDir,
                      middleware=options.middleware,
-                     extraEnv=env,
+                     extra_env=env,
                      verbose=options.verbose))
 
 
