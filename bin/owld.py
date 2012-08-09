@@ -266,7 +266,7 @@ class Daemon(object):
             kwds = meth_spec.pop()
 
         result = getattr(self, method_name)(*meth_spec[1:], **kwds)
-        callback(str(result))
+        callback(result)
         return
 
     def stop(self):
