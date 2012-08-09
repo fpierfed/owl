@@ -76,7 +76,7 @@ if(sys.platform == 'darwin'):
     bin_dir = get_config_var('BINDIR')
 
 
-    print("""
+print("""
 
 
 OWL %(version)s
