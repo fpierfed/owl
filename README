@@ -1,5 +1,5 @@
 OWL
-"Governance according to good laws"
+
 
 OWL is a pipeline/workflow execution framework designed to be simple and
 lightweight. Its intended mode of operation is the repeated execution of fairly
@@ -18,19 +18,19 @@ In addition to Python, OWL relies on a small number of Python packages:
  - jinja2 (http://jinja.pocoo.org/) used for templating
  - drmaa (http://code.google.com/p/drmaa-python/) used for Condor/SGE
 
-These Python modules can be easily installed using setuptools 
+These Python modules can be easily installed using setuptools
 (http://pypi.python.org/pypi/setuptools) and its easy_install command.
 
 If one chooses to use Condor as GRID middleware, care should be taken to ensure
-the presence of libdrmaa.[so|dylib] which is missing from both the static 
-distribution and most RPMs. In that case, simply download the corresponding 
+the presence of libdrmaa.[so|dylib] which is missing from both the static
+distribution and most RPMs. In that case, simply download the corresponding
 dynamic distribution from the Condor home page (http://www.cs.wisc.edu/condor/)
 and manually copy libdrmaa to the appropriate system directory.
 
 
 Operations
 The main concepts in OWL are that of a workflow and of a workflow template.
-A workflow is simply a sequence of steps and requirements between steps. An 
+A workflow is simply a sequence of steps and requirements between steps. An
 example of a workflow could be the following:
     A - Get into your car
     B - Start the car
@@ -38,9 +38,9 @@ example of a workflow could be the following:
     D - Listen to the radio
     E - Arrive at work, turn the car off
     F - Go to he office
-There is clearly an implied sequence in this familiar workflow. There are also 
-implied requirements between the steps. At the same time, it is worth noting 
-that some steps can be executed in parallel (namely C and D). We could 
+There is clearly an implied sequence in this familiar workflow. There are also
+implied requirements between the steps. At the same time, it is worth noting
+that some steps can be executed in parallel (namely C and D). We could
 graphically present the workflow as a directed acyclic graph (DAG):
 
                                     A
@@ -54,13 +54,13 @@ graphically present the workflow as a directed acyclic graph (DAG):
                                     F
 
 The concept of workflows as DAGs is very powerful, especially when one realizes
-that each step in the workflow (i.e. each node in the DAG) could just as easily 
+that each step in the workflow (i.e. each node in the DAG) could just as easily
 be a workflow (i.e. a DAG) itself.
 
 Workflows are a central concept in (among others) astronomical data processing
-where a workflow could be a data reduction pipeline or, just as easily, a 
+where a workflow could be a data reduction pipeline or, just as easily, a
 series of pipelines organized according to some rules. An example would be a
-data reduction pipeline executed before a calibration pipeline followed by 
+data reduction pipeline executed before a calibration pipeline followed by
 image registration and stacking.
 
 Workflow templates are a way to describe a workflow and its nodes by using a
@@ -71,3 +71,7 @@ the code to use in the execution of the workflow.
 
 OWL comes with a sample template and a script (process_dataset.py) to illustrate
 a possible pseudo-science workflow.
+
+
+For more information, please see the OWL User Manual uunder docs (work in
+progress).

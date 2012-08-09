@@ -1,4 +1,4 @@
-Installing OWL as a developer
+Quick Installation Instructions
 --
 
 	# this creates a virtualenv named "OWL"
@@ -25,3 +25,5 @@ Installing OWL as a developer
 	# see where the config files are located.
 	python -m owl.config
 
+
+For more in-depth instructions, please see docs/OWL_Installation_Notes.txt
