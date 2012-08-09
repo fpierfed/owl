@@ -1,0 +1,269 @@
+= OWL User Manual =
+
+
+
+== Introduction ==
+OWL is a layer on top of Condor^1^. While it is true that OWL supports Makefiles and other batch job execution systems via a plugin architecture, in the following we will be concentrating on Condor.
+
+What OWL provides that Condor does not is
+  * A (database-backed) blackboard system^2^.
+  * Templated workflows and job description files.
+  * Single file (in preparation) or Condor-style (i.e. one .dag and N .job files) workflows.
+  * A web GUI for control and monitoring.
+  * A dataset-centric view of the processing state and history (via the blackboard).
+
+In addition, OWL provides iRODS^3^ drivers for URL file transfers in Condor^4^.
+
+
+
+== Workflows ==
+A workflow is simply a sequence of steps and requirements between steps. An example of workflow could be the following:
+  A. Get into your car
+  B. Start the car
+  C. Drive to work
+  D. Listen to the radio
+  E. Arrive at work, turn the car off
+  F. Go to he office
+There is clearly an implied sequence in this familiar workflow. There are also implied requirements between the steps. At the same time, it is worth noting that some steps can be executed in parallel (namely C and D). We could describe the workflow as a directed acyclic graph (DAG):
+{{{
+   A
+   |
+   B
+  / \
+ C   D
+  \ /
+   E
+   |
+   F
+}}}
+The concept of workflows as DAGs is very powerful, especially when one realizes that each step in the workflow (i.e. each node in the DAG) could just as easily be a workflow (i.e. a DAG) itself.
+
+Workflows are a central concept in (among others) astronomical data processing where a workflow could be a data reduction pipeline or, just as easily, a series of pipelines organized according to some rules. An example would be a data reduction pipeline executed before a calibration pipeline followed by image registration and stacking.
+
+Workflow templates are a way to describe a workflow and its nodes by using a standard templating language (jinja2^6^). This allows for workflows and their nodes to be described irrespective of runtime environment considerations such as the location and names of the data files to process or version and location of the code to use in the execution of the workflow.
+
+The Condor DAGMan manual^5^ has more information on DAGs and their properties as they apply to Condor workflows.
+
+
+
+== Create Your First Workflow ==
+Creating a workflow is accomplished either by creating a single XML file describing steps and how there are sequenced, or by creating a Condor-style DAGMan application, consisting of one file describing the DAG structure and one file per step.
+
+For these examples we will create a simple workflow that illustrates
+  * Scatter-gather operations.
+  * File I/O.
+  * The ability to spread computation across cluster nodes/CPU cores.
+  * Dynamic workflows through the use of templates.
+
+The test workflow has a simple shape:
+{{{
+   A
+  / \
+ B   B
+  \ /
+   C
+}}}
+with the twist that we will have N parallel instances of the B step, where N is determined at run-time by inspecting the inout data. Keeping that in mind, our workflow could be described in plain English as follows: step A is executed first. Once A completes successfully, N instances of B run in parallel. Once all of those complete successfully, the final step C is executed. Once C completes successfully, the workflow has completes successfully.
+
+One thing to notice is that nowhere in the workflow description we refer to the data or how data is passed from one step to the next. Condor takes care of that (and is instructed to do so in our job description files/workflow description file as described below) by transferring inputs, outputs, logs and even executables from the submit machine to the worker nodes and back.
+
+A special note about files. Condor executes workflow steps (aka jobs) in a temporary directory (aka sandbox) on the remote worker node (the same applies for single-machine installations: Condor creates a temporary directory for executing each step and then deletes it). If needed, or otherwise instructed to do so (see below), Condor ill transfer the executable and/or any other file from the submit machine to that temporary sandbox on the worker node. By default, Condor will then transfer any file that was either created or modified in the sandbox back to the submit machine, in the work directory (i.e. the directory that OWL created for the workflow). In this scenario, each step can simply assume that all its input files are in the current working directory, and it can just write in the same directory with the confidence that things will just work.
+
+Alternatively (or in addition, we should say), steps can access input files and/or store output files directly on remote machines. This could be done in the step code itself, but it is probably better accomplished at the Condor level instead. In that case, workflow developers can just specify URLs for input/output files^4^. We will see an example of that below.
+
+Workflows need to be stored in the OWL template directory either as Condor-style workflows or single-file XML workflows. The template directory is by default the `templates` directory within the OWL install directory. Alternatively, an environment variable called `OWL_DIRECTORIES_TEMPLATE_ROOT` can be defined pointing to a user-specified directory instead.
+
+For our example, we will write a distributed grep. Our workflow will fetch some text from the web (we will use ''Remembrance of Things Past'' by Marcel Proust given its length to make things interesting), divide it in chunks of approxemately 10,000 lines each and perform a grep for a given word on each chunk in parallel. The gather step will then concatenates the results in order and writes them out to a file. The code for this example is attached to this page. 
+
+
+
+=== Create Your First Condor-Style Workflow ===
+First of all, download the [[attachment:example.tar.gz]] sample code archive and extract it somewhere convenient. Then cd into it:
+{{{
+vesta> tar zxf ~/example.tar.gz 
+vesta> cd example
+vesta> find .
+.
+./bin
+./bin/cat.py
+./bin/distributed_grep.py
+./bin/grep.py
+./bin/split.py
+./templates
+./templates/concatenate.job
+./templates/example.dag
+./templates/grep.job
+./templates/split_page.job
+}}}
+
+The example code is organized in two directories: `templates` for the workflow template files and `bin` for the Python code. The Python code itself falls into two distinct categories:
+  * Workflow submission code: `distributed_grep.py`
+  * Step code: `cat.py`, `grippy`, `split.py`
+The important thing to note here is that while the workflow submission code (`distributed_grep.py` in this case) has to be written in Python, the step code can be written in any language. We just happened to write it in Python but could be anything, including shell scripts, compiled code etc.
+
+Assuming a working installation of OWL, one can just run the example workflow:
+{{{
+vesta> ./bin/distributed_grep.py love "http://alarecherchedutempsperdu.com/text.html"
+DEBUG: drmaa_join_files: n
+DEBUG: drmaa_error_path: :/jwst/data/work/fpierfed_1329945687.905708/example_GrepRun1329945687.dag.lib.err
+DEBUG: drmaa_output_path: :/jwst/data/work/fpierfed_1329945687.905708/example_GrepRun1329945687.dag.lib.out
+DEBUG: drmaa_job_name: example_GrepRun1329945687.dag
+DEBUG: drmaa_block_email: 1
+DEBUG: drmaa_native_specification: universe        = scheduler
+log             = example_GrepRun1329945687.dag.dagman.log
+remove_kill_sig = SIGUSR1
+getenv          = True
+on_exit_remove	= ( ExitSignal =?= 11 || (ExitCode =!= UNDEFINED && ExitCode >=0 && ExitCode <= 2))
+copy_to_spool	= False
+arguments       = "-f -l . -Debug 3 -Lockfile example_GrepRun1329945687.dag.lock -AutoRescue 1 -DoRescueFrom 0 -Dag example_GrepRun1329945687.dag -CsdVersion $CondorVersion:' '7.4.2' 'May' '20' '2010' 'BuildID:' 'Fedora-7.4.2-1.fc13' '$"
+DEBUG: drmaa_wd: /jwst/data/work/fpierfed_1329945687.905708
+DEBUG: drmaa_v_env: ???
+DEBUG: drmaa_remote_command: /usr/local/bin/condor_dagman
+Dataset GrepRun1329945687 submitted as workflow vesta.local#295.0
+}}}
+
+Check the progress of the workflow using `condor_q` and look in the work directory that OWL created (`/jwst/data/work/fpierfed_1329945687.905708` in the example above) for intermediate files, logs, the actual Condor job description files as well as the result `text.result`.
+
+Wait for the workflow to finish executing and then make sure that the output (`text.result`) makes sense. The `distributed_grep.py` script downloads the novel to /tmp/text.html, so we can manually check that the workflow produced the correct output:
+{{{
+vesta> grep love /tmp/text.html > /tmp/foo
+vesta> diff /tmp/foo /jwst/data/work/fpierfed_1329945687.905708/text.result 
+vesta> 
+}}}
+which is the expected result.
+
+There is a lot going on there and so we will break it down for you. We first executed the workflow submission script, `distributed_grep.py` which starts off by importing some Python modules as well as two submodules of OWL: `config` and `workflow`. After that, it defines a utility function, `workflow_factory`, which we will use to customize the stock `Workflow` class that OWL provides without bothering to write our own. Real-world situation, however, usually require a custom `Workflow` subclass.
+
+After a bit of boilerplate code, `distributed_grep.py` gets to the meat of the problem:
+{{{
+n = 0
+out = open(FILE_NAME, 'w')
+for line in urllib2.urlopen(url):
+    out.write(line)
+    n += 1
+out.close()
+
+# Create a simple work directory path: workRoot/<user>_<timestamp>
+now = time.time()
+dirName = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), now)
+workDir = os.path.join(WORK_ROOT, dirName)
+
+# We now create a dataset name to identify this run in the blackboard.
+# No white spaces!
+dataset = 'GrepRun%d' % (int(now))
+
+# Create a instrument/mode Workflow instance (dataset independent)...
+W = workflow_factory(pattern, int(math.ceil(float(n) / float(N))), N)
+wflow = W(templateRoot=TEMPLATE_ROOT)
+# ... and submit it to the grid (for this particular piece of data).
+_id = wflow.execute(codeRoot=CODE_ROOT, 
+                    repository=REPOSITORY, 
+                    dataset=dataset, 
+                    workDir=workDir)
+print('Dataset %s submitted as workflow %s' % (dataset, _id))
+}}}
+
+This is where the action is: we first download the text we want to grep, we figure out how many chunks we need to generate and pass that number, together with the grep patter (read through `sys.argv`) and the number of lines in the file to our workflow factory and get out a brand new Workflow sub-class `W`. In the mean time, we have created a temporary directory where all of our input/output and intermediate files (including logs) will be stored: `workDir`, which in the example above is `/jwst/data/work/fpierfed_1329945687.905708/`. We are now ready to instantiate `W` and tell it to go look for workflow templates in the `templates` directory. Then we execute our new workflow instance and print out its ID.
+
+Now would be a good time to checkout the four template files `example.dag`, which is pretty simple and `concatenate.job`,  `grep.job` and `split_page.job` which are pretty much what we could write in pure Condor. Note the use of template variables (anything enclosed in `{{ }}` as well the for loops in `concatenate.job`. Also notice how we are able to pass these variables in our code (`workflow_factory` utility function but also `workflow.py` in OWL) to the templates. Again, for more information on the template library that we use and its syntax, we refer to its home page^6^.
+
+The step code (`cat.py`, `grep.py` and `split.py`) is absolutely uninteresting. What is interesting however is the fact that step code
+  * Can assume that all its input files are in the current working directory.
+  * Can simply write its output in the same directory.
+  * Can be written in any language.
+  * Can access the user environment (assuming `GetEnv = True` in the .job files).
+  * Might (and often times does) run on a different machine.
+The last point is particularly important to keep in mind. Even the various instances of the SPLIT step could end up running on different machines!
+
+
+
+==== Improvement: Make our Distributed Grep Synchronous ====
+Download the second version of the example tarball: [[attachment:example2.tar.gz]] and just as before:
+{{{
+vesta> tar zxf ~/example2.tar.gz 
+vesta> cd example2
+vesta> find .
+.
+./bin
+./bin/cat.py
+./bin/distributed_grep.py
+./bin/grep.py
+./bin/split.py
+./templates
+./templates/concatenate.job
+./templates/example.dag
+./templates/grep.job
+./templates/split_page.job
+}}}
+
+The only file that is different between the two versions is `distributed_grep.py`, the others are exactly the same. This new version of `distributed_grep.py` differs form the old version in two ways:
+  * As a simple optimization, it would not download the same file twice (not entirely true as the astute reader will have noticed).
+  * More significantly, it now issues a synchronous `execute` `Workflow` method call (by virtue of passing `wait=True`) and then prints out the content of the output file.
+
+Running the example:
+{{{
+vesta> ./bin/distributed_grep.py transcended "http://alarecherchedutempsperdu.com/text.html"
+[ lots of DEBUG output from libdrmaa ]
+and cake, but that it infinitely transcended those savours, could not, indeed, be of the same nature as theirs. Whence did
+transcended the narrow confines of his life as a man of the world. He had hardly had time to know his son, but had hoped
+}}}
+
+Keep in mind that synchronous workflow `execute` method calls are only supported under Condor at the moment and are enabled by simply adding `wait=True` to the `execute` method argument list. Also important to notice is that the return type of the synchronous call is a tuple of a string (the workflow ID) and an integer (its exit code) whereas the return type of the default asynchronous call (`wait=False` being the default) is a simple string (the workflow ID):
+{{{
+# ... and submit it to the grid (for this particular piece of data).
+_id, err = wflow.execute(codeRoot=CODE_ROOT, 
+                         repository=REPOSITORY, 
+                         dataset=dataset, 
+                         workDir=workDir,
+                         wait=True)
+# print('Dataset %s submitted as workflow %s' % (dataset, _id))
+# print('Exit status: %d' % (err))
+if(err):
+    print('Dataset %s submitted as workflow %s' % (dataset, _id))
+    print('Exit status: %d' % (err))
+    sys.exit(err)
+
+for line in open(os.path.join(workDir, 'text.result')):
+    sys.stdout.write(line)
+sys.exit(0)
+}}}
+
+
+
+
+
+
+
+=== Create Your First Single-File Workflow ===
+''Coming Soon''
+
+
+
+
+== Things to be Aware of ==
+=== File Transfers ===
+''Coming Soon''
+
+
+
+
+=== NFS-Related Issues ===
+''Coming Soon''
+
+
+
+
+== Bonus Material ==
+=== How to Make a non Debug Libdrmaa ===
+As most will have noticed, the DRMAA^7^ library included in the Condor distribution is extremely verbose, printing a lot of debugging information to STDERR. In order to turn the debugging chatter off, one has to build from source, commenting out `#define DEBUG` on line 8 of `config.h` (assuming version drmaa-1.6, which at the time of writing is the latest stable release). The drama sources can be downloaded from http://parrot.cs.wisc.edu/externals/drmaa-1.6.tar.gz
+
+
+
+== Notes ==
+  * ^1^ http://research.cs.wisc.edu/condor/
+  * ^2^ http://www.thecepblog.com/2008/07/20/a-brief-introduction-to-blackboard-architectures/
+  * ^3^ https://www.irods.org/
+  * ^4^ http://research.cs.wisc.edu/condor/manual/v7.6/3_13Setting_Up.html#sec:URL-transfer
+  * ^5^ http://research.cs.wisc.edu/condor/manual/v7.6/2_10DAGMan_Applications.html
+  * ^6^ http://jinja.pocoo.org/docs/
+  * ^7^ http://www.drmaa.org/
