@@ -41,7 +41,8 @@ def asn2exp(asn_file, n=None):
     # The association file has a global header as extension 0 and a binary table
     # as extension 1.
     try:
-        exps = [row[0].lower() for row in t[1].data if row[1] == 'EXP-DTH']
+        exps = [row[0].lower() for row in t[1].data \
+                if row[1].startswith('EXP-')]
     except:
         msg = '%s is not a valid association table FITS file.' % (asn_file)
         raise(Exception(msg))
