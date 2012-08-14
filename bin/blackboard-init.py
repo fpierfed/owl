@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Create an empty blackboard table in whatever database is defined in owlrc.
+
+Usage:
+    shell> blackboard-init.py
+"""
 import elixir
 
 from owl.config import DATABASE_CONNECTION_STR
