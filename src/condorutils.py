@@ -308,7 +308,7 @@ def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
                                owner, timeout))
 
 
-def condor_getprio(job_id):
+def condor_getprio(job_id, timeout=TIMEOUT):
     """
     Use condor_q to retrieve the priority of the job with the given `job_id`.
     Return the job priority as positive integer (or 0 , which is the default job
@@ -329,11 +329,12 @@ def condor_getprio(job_id):
         schedd_argv = ['-name', schedd]
 
     stdout = _run_and_get_stdout([which('condor_q')] +
-                                  schedd_argv +
-                                  ['-format',
-                                   '%d\n',
-                                   'JobPrio',
-                                   str(job_id)])
+                                 schedd_argv +
+                                 ['-format',
+                                  '%d\n',
+                                  'JobPrio',
+                                  str(job_id)],
+                                 timeout)
     if(stdout is None):
         return
 
