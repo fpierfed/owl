@@ -31,9 +31,28 @@ import urlparse
 
 
 
+def which(exe):
+    """
+    Find and return `exe` in the user unix PATH.
+    """
+    path = os.environ.get('PATH', '')
+    for directory in path.split(':'):
+        if(os.path.exists(os.path.join(directory, exe))):
+            return(os.path.join(directory, exe))
+    return(None)
+
+
+
 # Constants
 PROTOCOLS = ('irods', 'file')
-IRODS_BIN_DIR = '/jwst/bin'
+
+# This is better than just hard-coding the path to IRODS_BIN_DIR, but it is not
+# ideal as it assumes that iput/iget are in the path (and in the same dir).
+iput = which('iput')
+if(iput is not None):
+    IRODS_BIN_DIR = os.path.dirname(iput)
+else:
+    IRODS_BIN_DIR = '/jwst/bin'
 
 
 
