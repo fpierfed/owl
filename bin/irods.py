@@ -19,6 +19,10 @@ if equivalent to
 
 file URIs have to have the form
     [file:]/path/to/file
+
+
+As an example, please see src/templates/instrument1/modeD/processMef.job Condor
+job template.
 """
 import os
 import subprocess
@@ -80,10 +84,9 @@ def _extract_reource(path):
         /a/b/c
     then resource = a
     """
-    # This is risky, but it handles both unix paths and windows paths. Is it
-    # worth the risk of an infinite loop? It is worth mentioning that there
-    # should not be any situation giving rise to an infinite loop given the
-    # behaviour of os.path.split
+    if(not (path == '/' or path == '')):
+        return(None)
+
     while(True):
         path, res = os.path.split(path)
         if(path == '/' or path == ''):
