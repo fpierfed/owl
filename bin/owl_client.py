@@ -3,7 +3,8 @@
 OWL Client
 
 Communicate with an OWL system to both retrieve informations (query mode) or
-control it (command mode).
+control it (command mode). For detailed API method description, please see
+    docs/OWL_API.txt
 
 
 Installation
@@ -43,7 +44,8 @@ class OwlClient(object):
 
     def execute(self, *argv, **kwds):
         """
-        Internal method: you do not want to know.
+        Internal method: this is the implementation of the Proxy pattern in
+        Python.
         """
         # Connect to (addr, port) and send argv in JSON format.
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
