@@ -1,0 +1,60 @@
+# This is a templated Condor job descritopn file. For syntax and more 
+# information, see 
+#   http://research.cs.wisc.edu/condor/manual/v7.6/condor_submit.html
+
+# Path to the executable. In our case we just put it in code_root (a Python 
+# variable).
+Executable              = {{ code_root }}/split.py
+# We have already downloaded the page from the web and saved it in the 
+# repository (which is a Python variable filled in by OWL: see below) as 
+# text.html. Condor will then transfer it automativally for us in the current
+# work directory. This is why we can just pass it to the split script as 
+# text.html. We also pass the number of lines per chunk as the Python variable 
+# lines. Again lines will be replaced by its value by OWL at submit time.
+Arguments               = "text.html {{ lines }}"
+# This is where we redirect STDOUT and STDERR.
+Output                  = split.out
+Error                   = split.err
+
+# We know, but do not care at the moment, that split.py will split the input 
+# page into N chunks of 10,000 lines each. Each chunk will be called 
+#   text_<i>.html
+# where i goes from 0 to N-1. Condor will transfer them for us automatically.
+
+# Universe = vanilla is Condor-speak for a workflow that uses simple commandline 
+# executables.
+Universe                = vanilla
+# This is the single log file we are going to use for the whole workflow. We 
+# could specify a log file per step, of course.
+Log                     = {{ dataset }}.log
+# OWL uses this in order to create the right entries in the backboard.
++InputDataset           = "{{ dataset }}"
+
+# We ask Condor to always transfer files for up and to transfer output files as
+# the step exits.
+Should_Transfer_Files   = ALWAYS
+When_to_Transfer_Output = ON_EXIT
+# We want to make sure that Condor transfers the input file for us. The script
+# submitting this workflow has already downloaded the page to the location
+# pointed to by the Python variable repository. OWL will replace that with its
+# value at submit time.
+transfer_input_files = {{ repository }}/text.html
+
+# We want to capture the full user environment and make it available to the 
+# Step as it executes. This is helpful for using third-party software in non
+# standard locations, for instance.
+GetEnv                  = True
+
+# This is needed by OWL to invoke the correct Condor Job Hooks for populating
+# the backboard. For more information on job hooks, see
+#   http://research.cs.wisc.edu/condor/manual/v7.6/4_4Hooks.html
++HookKeyword            = "OWL"
+# This is informational only for OWL.
++Instances              = 1
+
+# Since we do not want to get an email each time a step exits, we simply turn 
+# off email notifications.
+Notification            = Never
+# This is Condor-speak to mean "start one instance".
+Queue
+

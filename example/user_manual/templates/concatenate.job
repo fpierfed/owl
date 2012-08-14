@@ -1,0 +1,60 @@
+# This is a templated Condor job descritopn file. For syntax and more 
+# information, see 
+#   http://research.cs.wisc.edu/condor/manual/v7.6/condor_submit.html
+
+# Path to the executable. In our case we just put it in code_root (a Python 
+# variable).
+Executable              = {{ code_root }}/cat.py
+# We know that the previous step runs n instances in parallel and each produces 
+# a file called 
+#   text_<i>.result
+# where i goes from 0 to n-1. We also know the value of n, since the tools that
+# submits the workflow to OWL computes that from the input data. So we can use
+# templates again to generate the list of input files. For more information on
+# the template syntax see the Jinja2 manual: http://jinja.pocoo.org/docs/
+{% set space = joiner(" ") %}
+Arguments               = {% for i in range(n) -%}{{ space() }}text_{{ i }}.result{% endfor %}
+# This is where we redirect STDOUT and STDERR.
+Output                  = cat.out
+Error                   = cat.err
+
+# We know, but do not care at the moment, that cat.py will generate an output
+# file called 
+#   text.result
+# Condor will transfer it for us automatically.
+
+# Universe = vanilla is Condor-speak for a workflow that uses simple commandline 
+# executables.
+Universe                = vanilla
+# This is the single log file we are going to use for the whole workflow. We 
+# could specify a log file per step, of course.
+Log                     = {{ dataset }}.log
+# OWL uses this in order to create the right entries in the backboard.
++InputDataset           = "{{ dataset }}"
+
+# We ask Condor to always transfer files for up and to transfer output files as
+# the step exits.
+Should_Transfer_Files   = ALWAYS
+When_to_Transfer_Output = ON_EXIT
+# We want to make sure that Condor transfers the input file for us:
+{% set comma = joiner(",") %}
+transfer_input_files = {% for i in range(n) -%}{{ comma() }}text_{{ i }}.result{% endfor %}
+
+# We want to capture the full user environment and make it available to the 
+# Step as it executes. This is helpful for using third-party software in non
+# standard locations, for instance.
+GetEnv                  = True
+
+# This is needed by OWL to invoke the correct Condor Job Hooks for populating
+# the backboard. For more information on job hooks, see
+#   http://research.cs.wisc.edu/condor/manual/v7.6/4_4Hooks.html
++HookKeyword            = "OWL"
+# This is informational only for OWL.
++Instances              = 1
+
+# Since we do not want to get an email each time a step exits, we simply turn 
+# off email notifications.
+Notification            = Never
+# This is Condor-speak to mean "start 1 instance".
+Queue
+

@@ -1,0 +1,27 @@
+# This is a comment.
+# Anything in double curly braces is a Python variable substituted by OWL at 
+# workflow submit time. The rest is Condor DAGMan syntax.
+
+# Step definitions, Condor-style: JOB <step name> <step definition file>
+# By convention, OWL expects step definition files to have the extension .job, 
+# workflow definition files to have the extension .dag.
+# Also by convention, OWL renames .dag and .job files as 
+#   <filename>_<dataset>.<extension>
+JOB     SPLIT   split_page_{{ dataset }}.job
+JOB     GREP    grep_{{ dataset }}.job
+JOB     CONCAT  concatenate_{{ dataset}}.job
+# The three lines above simply define three steps: SPLIT, GREP and CONCAT, 
+# pointing up to three .job files for their definition: split_page.job, grep.job
+# and concatenate.job. These will be renamed at submission time to match the 
+# definitions above.
+
+# Now the sequencing information for our steps: which one gets executed when.
+# Note the Condor syntax: 
+#   PARENT <step name> [<step name> ...] CHILD <step name> [<step name> ...]
+# It is important to realize that each step can have >=1 parents and >=1 
+# children.
+PARENT  SPLIT   CHILD   GREP
+PARENT  GREP    CHILD   CONCAT
+# The lines above simply tell us that we first run SPLIT, then GREP and finally
+# CONCAT. The .job file for GREP will then tell us how many instaces of that
+# step we will need to start.
