@@ -36,7 +36,7 @@ From the Python shell:
 >>> from owl_client import OwlClient
 >>> client = OwlClient('192.168.2.1', 9999)
 >>> client.resources_get_list()
-u"[u'slot1@vesta.local', u'slot2@vesta.local', u'slot3@vesta.local', u'slot4@vesta.local', u'slot5@vesta.local', u'slot6@vesta.local', u'slot7@vesta.local', u'slot8@vesta.local']"
+[u'slot1@vesta.local', u'slot2@vesta.local', u'slot3@vesta.local', u'slot4@vesta.local', u'slot5@vesta.local', u'slot6@vesta.local', u'slot7@vesta.local', u'slot8@vesta.local']
 }}}
 
 
