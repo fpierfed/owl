@@ -20,7 +20,7 @@ import sys
 
 
 
-def get_owl_nvironment(job_ad):
+def get_owl_environment(job_ad):
     """
     Look into the given job ClassAd for any extra environment variables that
     might be defined there but not in our shell environment. Return the
@@ -157,7 +157,7 @@ if(__name__ == '__main__'):
 
     # Agument the (very restricted) environment with OWL specific variables
     # defined in the job/ClassAd Environment (if any).
-    owlEnv = get_owl_nvironment(classad)
+    owlEnv = get_owl_environment(classad)
     for k in owlEnv.keys():
         v = owlEnv[k]
         logger.debug('Adding ENV(%s) = %s' % (k, v))
