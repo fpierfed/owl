@@ -194,7 +194,7 @@ class Daemon(object):
         2. Sends keepalive messages to the Condor Master (is present).
     """
     def __init__(self, ipaddr, port, heartbeat_timeout, max_msg_bytes=None,
-                 apiprefix=OWLD_METHOD_PREFIX):
+                 max_rows=None, apiprefix=OWLD_METHOD_PREFIX):
         """
         Initialize an OWL Daemon.
 
@@ -205,9 +205,13 @@ class Daemon(object):
             max_msg_bytes: if neither None nor 0, the maximum size in bytes for
                 a message sent over `port`. If specified and if the incoming
                 data packet is larger that that, it will get ignored - integer
+            max_rows: if neither None nor 0, the maximum number of rows API
+                methods can return - integer
             apiprefix: each method which starts with apiprefix is exposed as an
                 API method - string
         """
+        self._max_rows = max_rows
+
         # Send a heartbeat every heartbeat_timeout seconds.
         self.hb_timeout = heartbeat_timeout
 
@@ -404,7 +408,10 @@ class Daemon(object):
                   'ExitCode',
                   'JobState',
                   'JobDuration')
-        # FIXME: Danger of using too much memory here!
+        # Do we have a limit on the number of rows we can return?
+        if(self._max_rows and self._max_rows < limit):
+            limit = self._max_rows
+
         return([dict([(f, getattr(e, f, None)) for f in fields]) \
                 for e in blackboard.listEntries(owner=owner,
                                                 dataset=dataset,
@@ -576,9 +583,11 @@ if(__name__ == '__main__'):
         print('WARNING: Unable to load OWL config. ')
         print('         Using port = 9999')
         print('         Using max_msg_bytes = None (i.e. unlimited)')
+        print('         Using max_rows = None (i.e. unlimited)')
         config = object()
         config.OWLD_PORT = 9999
         config.OWLD_MAX_MSG_BYTES = None
+        config.OWLD_MAX_ROWS = None
 
 
     port = int(config.OWLD_PORT)
@@ -593,11 +602,19 @@ if(__name__ == '__main__'):
         if(max_msg_bytes <= 0):
             max_msg_bytes = None
 
+    # Do we have a limit on the maximum number of database rows we can return?
+    max_rows = None
+    if(config.OWLD_MAX_ROWS):
+        max_rows = int(config.OWLD_MAX_ROWS)
+        if(max_rows <= 0):
+            max_rows = None
+
     print('Starting OWLD on %s:%d' % (hostname, port))
     daemon = Daemon(ipaddr=this_ip,
                     port=port,
                     heartbeat_timeout=HEARTBEAT_TIMEOUT,
-                    max_msg_bytes=max_msg_bytes)
+                    max_msg_bytes=max_msg_bytes,
+                    max_rows=max_rows)
     try:
         daemon.run()
     except KeyboardInterrupt:
