@@ -83,7 +83,8 @@ if(not os.path.exists(sys_config)):
     raise(RuntimeError(msg))
 
 # Load the system config
-config = ConfigParser.RawConfigParser(defaults={'port': -1})
+config = ConfigParser.RawConfigParser(defaults={'port': -1,
+                                                'max_msg_bytes': None})
 config.read(sys_config)
 
 # Load the local config and override whatever appropriate.

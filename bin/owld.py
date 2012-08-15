@@ -19,9 +19,8 @@ therein. For instance (in /etc/condor/condor_config.local):
     DAEMON_LIST   = MASTER, COLLECTOR, NEGOTIATOR, STARTD, SCHEDD, OWLD
 
 API
-The OWL daemon implements the following JSON HTTP API
-
-
+The OWL daemon implements the following JSON HTTP API described in
+    docs/OWL_API.txt
 """
 import array
 import asyncore
@@ -38,8 +37,6 @@ import time
 import owl.condorutils as condor
 from owl import blackboard
 
-
-# FIXME: Parse GlobalJobId to get the name of the schedd to query and the jobId.
 
 
 # Constants
@@ -82,7 +79,7 @@ class RequestHandler(asynchat.async_chat):
     # asynchat.async_chat has a lot of publich methods, nothing we can do about
     # that, hence:
     # pylint: disable=R0904
-    def __init__(self, request, cmd_queue, cmd_id_queue):
+    def __init__(self, request, cmd_queue, cmd_id_queue, max_msg_bytes=None):
         asynchat.async_chat.__init__(self, request)
         self.set_terminator('\n')
 
@@ -90,6 +87,7 @@ class RequestHandler(asynchat.async_chat):
         self.request = request
         self.cmd_queue = cmd_queue
         self.cmd_id_queue = cmd_id_queue
+        self.max_msg_bytes = max_msg_bytes
         return
 
     def collect_incoming_data(self, data):
@@ -98,6 +96,12 @@ class RequestHandler(asynchat.async_chat):
         append the additional data to whatever we already have in self.indata.
         """
         self.indata += data
+        if(self.max_msg_bytes and len(self.indata) > self.max_msg_bytes):
+            # Too much data!
+            msg = 'too much data (%d bytes > %d bytes)' \
+                  % (len(self.indata), self.max_msg_bytes)
+            self.indata = msg + self.terminator
+            self.reply(msg)
         return
 
     def found_terminator(self):
@@ -147,11 +151,13 @@ class CommandMonitor(asyncore.dispatcher):
     # asyncore.dispatcher has a lot of publich methods, nothing we can do about
     # that, hence:
     # pylint: disable=R0904
-    def __init__(self, ipaddr, port, cmd_queue):
+    def __init__(self, ipaddr, port, cmd_queue, max_msg_bytes=None):
         asyncore.dispatcher.__init__(self)
 
         self.cmd_queue = cmd_queue
         self.cmd_id_queue = CommandIDQueue()
+
+        self.max_msg_bytes = max_msg_bytes
 
         # Start the actual service.
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -172,7 +178,8 @@ class CommandMonitor(asyncore.dispatcher):
             return
 
         # request, client_address = pair
-        RequestHandler(pair[0], self.cmd_queue, self.cmd_id_queue)
+        RequestHandler(pair[0], self.cmd_queue, self.cmd_id_queue,
+                       self.max_msg_bytes)
         return
 
 
@@ -180,11 +187,13 @@ class Daemon(object):
     """
     OWL Daemon
 
-    It does two things: listens on the network for incoming commands (in which
-    case it sends the results back to the client on the same connection) and
-    relays those commands to OWL (and the results back to the client).
+    It does two things:
+        1. Listens on the network for incoming commands (in which case it sends
+           the results back to the client on the same connection) and relays
+           those commands to OWL (and the results back to the client).
+        2. Sends keepalive messages to the Condor Master (is present).
     """
-    def __init__(self, ipaddr, port, heartbeat_timeout,
+    def __init__(self, ipaddr, port, heartbeat_timeout, max_msg_bytes=None,
                  apiprefix=OWLD_METHOD_PREFIX):
         # Send a heartbeat every heartbeat_timeout seconds.
         self.hb_timeout = heartbeat_timeout
@@ -196,7 +205,8 @@ class Daemon(object):
         self.cmd_queue = CommandQueue()
 
         # Monitor for user commands.
-        self.cmd_monitor = CommandMonitor(ipaddr, port, self.cmd_queue)
+        self.cmd_monitor = CommandMonitor(ipaddr, port, self.cmd_queue,
+                                          max_msg_bytes)
         return
 
     def run(self, use_poll=False):
@@ -547,8 +557,12 @@ if(__name__ == '__main__'):
     try:
         from owl import config
     except:
+        print('WARNING: Unable to load OWL config. ')
+        print('         Using port = 9999')
+        print('         Using max_msg_bytes = None (i.e. unlimited)')
         config = object()
         config.OWLD_PORT = 9999
+        config.OWLD_MAX_MSG_BYTES = None
 
 
     port = int(config.OWLD_PORT)
@@ -556,9 +570,18 @@ if(__name__ == '__main__'):
     # this_ip = socket.gethostbyname(hostname)
     this_ip = '0.0.0.0'
 
+    # Do we have limits on the max incoming messgae size?
+    max_msg_bytes = None
+    if(config.OWLD_MAX_MSG_BYTES):
+        max_msg_bytes = int(config.OWLD_MAX_MSG_BYTES)
+        if(max_msg_bytes <= 0):
+            max_msg_bytes = None
+
     print('Starting OWLD on %s:%d' % (hostname, port))
-    daemon = Daemon(ipaddr=this_ip, port=port,
-                    heartbeat_timeout=HEARTBEAT_TIMEOUT)
+    daemon = Daemon(ipaddr=this_ip,
+                    port=port,
+                    heartbeat_timeout=HEARTBEAT_TIMEOUT,
+                    max_msg_bytes=max_msg_bytes)
     try:
         daemon.run()
     except KeyboardInterrupt:
