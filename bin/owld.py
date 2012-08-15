@@ -195,6 +195,19 @@ class Daemon(object):
     """
     def __init__(self, ipaddr, port, heartbeat_timeout, max_msg_bytes=None,
                  apiprefix=OWLD_METHOD_PREFIX):
+        """
+        Initialize an OWL Daemon.
+
+            ipadr: IP address to listen on (hint: use 0.0.0.0) - string
+            port: network port to listen to - integer
+            heartbeat_timeout: the number of seconds to wait before sending out
+                a heartbeat signal (to the Condor Master) - float
+            max_msg_bytes: if neither None nor 0, the maximum size in bytes for
+                a message sent over `port`. If specified and if the incoming
+                data packet is larger that that, it will get ignored - integer
+            apiprefix: each method which starts with apiprefix is exposed as an
+                API method - string
+        """
         # Send a heartbeat every heartbeat_timeout seconds.
         self.hb_timeout = heartbeat_timeout
 
@@ -209,7 +222,7 @@ class Daemon(object):
                                           max_msg_bytes)
         return
 
-    def run(self, use_poll=False):
+    def run(self, use_poll=False, timeout=1., sleep_time=.1):
         """
         Sit is an infinite loop waiting for a command to answer.
         """
@@ -220,7 +233,6 @@ class Daemon(object):
         else:
             poll_fun = asyncore.poll
         asyncmap = asyncore.socket_map
-        timeout = 1.
 
         last_heartbeat = 0
         pid = os.getpid()
@@ -236,7 +248,7 @@ class Daemon(object):
             now = time.time()
             if(now - last_heartbeat >= self.hb_timeout):
                 send_alive(pid, timeout)
-            time.sleep(.1)
+            time.sleep(sleep_time)
         return
 
     def _handle_command(self):
