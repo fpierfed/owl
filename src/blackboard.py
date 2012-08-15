@@ -119,7 +119,7 @@ column:
 """
 import datetime
 import elixir
-from sqlalchemy import desc
+from sqlalchemy import desc, asc
 
 from classad import Job
 from config import DATABASE_CONNECTION_STR
@@ -345,10 +345,12 @@ def updateEntry(job):
     return
 
 
-def listEntries(owner=None, dataset=None, limit=None, offset=None):
+def listEntries(owner=None, dataset=None, limit=None, offset=None,
+                newest_first=True):
     """
     List all known Blackboard entries and return them to the caller. Implement
-    pagination via limit and offset.
+    pagination via limit and offset. If newest_first=True, then the results are
+    sorted by descending JobStartDate. The sorting is reversed otherwise.
     """
     # Define the database connection.
     elixir.metadata.bind = DATABASE_CONNECTION_STR
@@ -381,7 +383,10 @@ def listEntries(owner=None, dataset=None, limit=None, offset=None):
         query = query.filter_by(Dataset=dataset)
     if(owner):
         query = query.filter_by(Owner=owner)
-    query = query.order_by(desc(Blackboard.JobStartDate))
+    if(newest_first):
+        query = query.order_by(desc(Blackboard.JobStartDate))
+    else:
+        query = query.order_by(asc(Blackboard.JobStartDate))
 
     if(limit is not None):
         query = query.limit(limit)

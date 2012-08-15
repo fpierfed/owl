@@ -369,7 +369,7 @@ class Daemon(object):
         return(stats.todict())
 
     def owlapi_jobs_get_list(self, owner=None, dataset=None,
-                             offset=None, limit=20):
+                             offset=None, limit=20, newest_first=True):
         """
         Return the list of all Blackboard entries, optionally restricting to
         those corresponding to a given dataset (when `dataset` is not None)
@@ -383,8 +383,12 @@ class Daemon(object):
         entries to the end of the list (and from `offset`). Otherwise return at
         most `limit` results (again starting from `offset`).
 
+        If newest_first=True, then the results are sorted by descending
+        JobStartDate. The sorting is reversed otherwise.
+
         Usage
-            jobs_get_list(owner=None, datasset=None, offset=None, limit=20)
+            jobs_get_list(owner=None, datasset=None, offset=None, limit=20,
+                          newest_first=True)
 
         Return
             [{GlobalJobId, DAGManJobId, Dataset, Owner, JobStartDate,
