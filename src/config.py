@@ -84,7 +84,8 @@ if(not os.path.exists(sys_config)):
 
 # Load the system config
 config = ConfigParser.RawConfigParser(defaults={'port': -1,
-                                                'max_msg_bytes': None})
+                                                'max_msg_bytes': None,
+                                                'max_rows': None})
 config.read(sys_config)
 
 # Load the local config and override whatever appropriate.
