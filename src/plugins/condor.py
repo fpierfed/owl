@@ -1,5 +1,7 @@
 """
 Define all Condor-specific DRMAA properties here.
+
+For more information on DRMAA, please see http://www.drmaa.org
 """
 import os
 
