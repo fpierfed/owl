@@ -329,7 +329,7 @@ class Daemon(object):
                 res.append((name, method.__doc__.strip()))
         return(res)
 
-    def owlapi_resources_get_list(self):
+    def owlapi_resources_get_list(self, timeout=condor.TIMEOUT):
         """
         Return the list of the names of available compute resources.
 
@@ -339,10 +339,10 @@ class Daemon(object):
         Return
             [resource name, ...]
         """
-        ads = condor.condor_status()
+        ads = condor.condor_status(timeout=timeout)
         return([ad.Name for ad in ads])
 
-    def owlapi_resources_get_info(self, name):
+    def owlapi_resources_get_info(self, name, timeout=condor.TIMEOUT):
         """
         Return the full ClassAd for the given resource name as a dictionary.
 
@@ -352,12 +352,12 @@ class Daemon(object):
         Return
             ClassAd instance as dictionary
         """
-        ads = condor.condor_status(name)
+        ads = condor.condor_status(name, timeout=timeout)
         if(not ads):
             return
         return(ads[0].todict())
 
-    def owlapi_resources_get_stats(self):
+    def owlapi_resources_get_stats(self, timeout=condor.TIMEOUT):
         """
         Return the full Condor Schedd statistics as a Python dictionary.
 
@@ -367,13 +367,14 @@ class Daemon(object):
         Return
             Collected statistics as a dictionary.
         """
-        stats = condor.condor_stats()
+        stats = condor.condor_stats(timeout=timeout)
         if(not stats):
             return
         return(stats.todict())
 
     def owlapi_jobs_get_list(self, owner=None, dataset=None,
-                             offset=None, limit=20, newest_first=True):
+                             offset=None, limit=20, newest_first=True,
+                             timeout=condor.TIMEOUT):
         """
         Return the list of all Blackboard entries, optionally restricting to
         those corresponding to a given dataset (when `dataset` is not None)
@@ -418,7 +419,7 @@ class Daemon(object):
                                                 limit=limit,
                                                 offset=offset)])
 
-    def owlapi_jobs_get_info(self, job_id):
+    def owlapi_jobs_get_info(self, job_id, timeout=condor.TIMEOUT):
         """
         Return all info about the given blackboard entry (identified by its
         GlobalJobId `job_id`) as a Python dictionary.
@@ -437,7 +438,8 @@ class Daemon(object):
             return
         return(entry.todict())
 
-    def owlapi_jobs_suspend(self, job_id=None, owner=None):
+    def owlapi_jobs_suspend(self, job_id=None, owner=None,
+                            timeout=condor.TIMEOUT):
         """
         Suspend the job corresponding to the given GlobalJobId `job_id` (if not
         None) or all the jobs of the given `owner` (if not None). It is
@@ -453,9 +455,10 @@ class Daemon(object):
             254 if job_id is not a valid Condor (local or global) job ID
             otherwise: error condition (the same returned by condor_hold)
         """
-        return(condor.condor_hold(job_id=job_id, owner=owner))
+        return(condor.condor_hold(job_id=job_id, owner=owner, timeout=timeout))
 
-    def owlapi_jobs_resume(self, job_id=None, owner=None):
+    def owlapi_jobs_resume(self, job_id=None, owner=None,
+                           timeout=condor.TIMEOUT):
         """
         Resume the job corresponding to the given GlobalJobId `job_id` (if not
         None) or all the jobs of the given `owner` (if not None). It is
@@ -471,9 +474,11 @@ class Daemon(object):
             254 if job_id is not a valid Condor (local or global) job ID
             otherwise: error condition (the same returned by condor_release)
         """
-        return(condor.condor_release(job_id=job_id, owner=owner))
+        return(condor.condor_release(job_id=job_id, owner=owner,
+                                     timeout=timeout))
 
-    def owlapi_jobs_set_priority(self, priority, job_id=None, owner=None):
+    def owlapi_jobs_set_priority(self, priority, job_id=None, owner=None,
+                                 timeout=condor.TIMEOUT):
         """
         Set the `priority` of the job corresponding to the given GlobalJobId
         `job_id` (if not None) or of all the jobs of the given `owner` (if not
@@ -494,9 +499,10 @@ class Daemon(object):
             253: if `priority` is not a positive (or 0) integer
             otherwise: error condition (the same returned by condor_release)
         """
-        return(condor.condor_setprio(priority, job_id=job_id, owner=owner))
+        return(condor.condor_setprio(priority, job_id=job_id, owner=owner,
+                                     timeout=timeout))
 
-    def owlapi_jobs_get_priority(self, job_id):
+    def owlapi_jobs_get_priority(self, job_id, timeout=condor.TIMEOUT):
         """
         Get the `priority` of the job corresponding to the given GlobalJobId
         `job_id`. Return the job priority or None in case of error.
@@ -512,7 +518,7 @@ class Daemon(object):
             int: job priority
             None: error condition
         """
-        return(condor.condor_getprio(job_id))
+        return(condor.condor_getprio(job_id, timeout=timeout))
 
 
 
