@@ -25,7 +25,9 @@ import socket
 
 # Constants
 OWLD_PORT = 9999
-
+ERROR = {255: 'All required arguments are None.',
+         254: 'Not a valid OWL Job ID.',
+         253: 'Invalid priority value.'}
 
 
 
