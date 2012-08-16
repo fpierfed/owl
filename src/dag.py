@@ -34,8 +34,8 @@ def _extract_inouts(arg_string):
 def _parse(dag, directory):
     """
     A DAG syntax is pretty simple
-        JOB JOBNAME JOBSCRIPT
-        PARENT JOBNAME CHILD JOBNAME
+        JOB <JOBNAME> <JOBSCRIPT>
+        PARENT <JOBNAME> CHILD <JOBNAME>
     We do not support DATA jobs quite yet.
     """
     dag = os.path.join(directory, dag)
