@@ -12,6 +12,9 @@ import re
 
 
 # Constants
+# We need this regex to replace line continuations with a space. In a ClassAd
+# lines can be split over multiple lines using a \. When we find one, we get rid
+# of it, append a space get the following like and stitch it to the current one.
 MULTILINE_BUSTER = re.compile(' *\\\\ *\n *')
 
 
