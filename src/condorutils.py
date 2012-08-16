@@ -13,7 +13,6 @@ from owl.utils import which
 
 
 # Constants
-# TODO: We should be using condor_quill or similar system.
 # Timeout in seconds for the call to EXE.
 TIMEOUT = 5.
 
@@ -89,7 +88,7 @@ def is_localjobid(job_id):
     return(True)
 
 
-def _run_and_get_stdout(args, timeout=TIMEOUT):
+def _run_and_get_stdout(args, timeout=TIMEOUT, sleep_time=.1):
     """
     Simple wrapper around subprocess.Popen() with support for timeouts. Return
     the path of the file with the STDOUT content. In case the process had to be
@@ -110,13 +109,13 @@ def _run_and_get_stdout(args, timeout=TIMEOUT):
                             stdout=f,
                             shell=False)
 
-    # Since proc.wait() can deadlock, it is prudent to jut poll...
+    # Since proc.wait() can deadlock, it is prudent to just poll...
     start_time = time.time()
     while(time.time() - start_time < timeout):
         exit_code = proc.poll()
         if(exit_code is None):
             # The process is still running.
-            time.sleep(.1)
+            time.sleep(sleep_time)
             continue
 
         # If we are here, the process finished. Remove the file.
@@ -129,14 +128,14 @@ def _run_and_get_stdout(args, timeout=TIMEOUT):
         f.flush()
         f.close()
         return(file_name)
-    # If the process is still tunning at this point, kill it. Remove the file.
+    # If the process is still running at this point, kill it. Remove the file.
     proc.kill()
     f.close()
     os.remove(file_name)
     return(None)
 
 
-def _run(args, timeout=TIMEOUT):
+def _run(args, timeout=TIMEOUT, sleep_time=.1):
     """
     Simple wrapper around subprocess.Popen() with support for timeouts. Return
     the exit code of the invoked command. In case the process had to be killed,
@@ -154,7 +153,7 @@ def _run(args, timeout=TIMEOUT):
         exit_code = proc.poll()
         if(exit_code is None):
             # The process is still running.
-            time.sleep(.1)
+            time.sleep(sleep_time)
             continue
 
         # If we are here, the process finished. Return exit_code.
@@ -227,7 +226,7 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
     if(extra_argv is None):
         extra_argv = []
     elif(not isinstance(extra_argv, (list, tuple))):
-        # We are being very tolerant here: others would probably throw and
+        # We are being very tolerant here: others would probably throw an
         # exception and would be right in doing so.
         # FIXME: Throw an exception instead?
         extra_argv = [extra_argv, ]
@@ -280,27 +279,23 @@ def condor_release(job_id=None, owner=None, timeout=TIMEOUT):
     return(_run_condor_job_cmd('condor_release', [], job_id, owner, timeout))
 
 
-def condor_prio(priority, job_id=None, owner=None, timeout=TIMEOUT):
+def condor_setprio(priority, job_id=None, owner=None, timeout=TIMEOUT):
     """
     Wrapper around condor_prio: set the priority of the job with the given
     `job_id` or of all the jobs of the given `owner` (depending on which one is
     not None). If both `job_id` and `owner` are specified, `owner` is ignored.
 
-    `priority` can be any positive integer (or 0), with higher numbers
-    corresponding to greater priority. For reference, job priority defaults to
-    0.
+    For reference, job priority defaults to 0.
 
     Return
         255 if both `job_id` and `owner` == None or
         254 if job_id is not a valid Condor (local or global) job ID or
-        253 if `priority` is not a positive (or 0) integer or
+        253 if `priority` is not an integer or
         condor_prio exit code
     """
     try:
         priority = int(priority)
     except (ValueError, TypeError):
-        return(253)
-    if(priority < 0):
         return(253)
 
     # Invoke condot_release.

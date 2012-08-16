@@ -494,7 +494,7 @@ class Daemon(object):
             253: if `priority` is not a positive (or 0) integer
             otherwise: error condition (the same returned by condor_release)
         """
-        return(condor.condor_prio(priority, job_id=job_id, owner=owner))
+        return(condor.condor_setprio(priority, job_id=job_id, owner=owner))
 
     def owlapi_jobs_get_priority(self, job_id):
         """
