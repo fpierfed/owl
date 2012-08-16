@@ -71,9 +71,9 @@ Create an !OwlClient instance. The instance is going to connect to an owld runni
  * jobs_resume(''job_id''=None, ''owner''=None)
   * Resume the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_release.
  * jobs_get_priority(''job_id'')
-  * Return the priority of the job with the given !GlobalJobId ''job_id'' or None in case such a job is not currently queued/running. Priorities can be 0 (the default value) or any positive integer. Higher values mean higher job priorities. This does not look into historical jobs in the blackboard database but rather only in the active Condor queue.
+  * Return the priority of the job with the given !GlobalJobId ''job_id'' or None in case such a job is not currently queued/running. Priorities can be 0 (the default value) or any integer. Higher values mean higher job priorities. This does not look into historical jobs in the blackboard database but rather only in the active Condor queue.
  * jobs_set_priority(''priority'', ''job_id''=None, ''owner''=None)
-  * Set the priority to ''priority'' for the given !GlobalJobId ''job_id'' or, if that is None, for all jobs of the given ''owner''. Return the exit code of condor_prio. Priorities can be 0 (the default value) or any positive integer. Higher values mean higher job priorities. This does not edit historical jobs in the blackboard database but rather only in the active Condor queue.
+  * Set the priority to ''priority'' for the given !GlobalJobId ''job_id'' or, if that is None, for all jobs of the given ''owner''. Return the exit code of condor_prio. Priorities can be 0 (the default value) or any integer. Higher values mean higher job priorities. This does not edit historical jobs in the blackboard database but rather only in the active Condor queue.
 
 
 
