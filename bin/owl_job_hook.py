@@ -37,7 +37,13 @@ def get_owl_environment(job_ad):
             job_env_str = job_env_str.strip()
             job_env_str = job_env_str[1:-1]
 
-    # Replace ' ' with a placeholder.
+    # Replace ' ' with a placeholder. We need to do that because the Condor
+    # Environment string is a space-separated list of key=value pairs all
+    # enclosed in double quotes. If value has a space in it, then the space has
+    # to be gingle-quoted. Since we split on spaces, we want to avoid splitting
+    # value strings and hence we replace "' '" with something else, split the
+    # whole Environment string to get the list of key=value pairs and then
+    # inside each value we put back that spaces (if needed).
     job_env_str = job_env_str.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
     tokens = job_env_str.split()
     for token in tokens:
