@@ -76,6 +76,26 @@ class OwlClient(object):
         self.sock.close()
         return(json.loads(res))
 
+    def isalive(self):
+        """
+        Return whether or not the remote OWLD is alive.
+        """
+        msg = 'foo'
+        try:
+            res = self.echo(msg)
+        except socket.error:
+            # print('The remote OWLD on %s:%d does not seem to ba running.' \
+            #       % (self.addr, self.port))
+            return(False)
+        except:
+            # print('The remote process on %s:%d does not seem to be an OWLD.' \
+            #       % (self.addr, self.port))
+            return(False)
+        if(res == msg):
+            return(True)
+        # print('The remote OWLD on %s:%d does not seem to be right.' \
+        #       % (self.addr, self.port))
+        return(False)
 
 
 
