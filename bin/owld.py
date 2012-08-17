@@ -373,8 +373,7 @@ class Daemon(object):
         return(stats.todict())
 
     def owlapi_jobs_get_list(self, owner=None, dataset=None,
-                             offset=None, limit=20, newest_first=True,
-                             timeout=condor.TIMEOUT):
+                             offset=None, limit=20, newest_first=True):
         """
         Return the list of all Blackboard entries, optionally restricting to
         those corresponding to a given dataset (when `dataset` is not None)
@@ -419,7 +418,7 @@ class Daemon(object):
                                                 limit=limit,
                                                 offset=offset)])
 
-    def owlapi_jobs_get_info(self, job_id, timeout=condor.TIMEOUT):
+    def owlapi_jobs_get_info(self, job_id):
         """
         Return all info about the given blackboard entry (identified by its
         GlobalJobId `job_id`) as a Python dictionary.
