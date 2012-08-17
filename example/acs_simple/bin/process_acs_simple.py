@@ -16,6 +16,7 @@ data. The middleware is specified using the -g option and defaults to 'condor'.
 Supported middleware is 'condor', 'makefile' or 'xgrid'.
 """
 import os
+import random
 import time
 
 from owl import config
@@ -74,6 +75,14 @@ def process(datasets, repository, template_root, code_root=CODE_ROOT,
     # Create a simple work directory path: work_root/<user>_<timestamp>
     dir_name = '%s_%f' % (os.environ.get('USER', 'UNKNOWN'), time.time())
     work_dir = os.path.join(work_root, dir_name)
+
+    # Add a random string to work_dir to make sure that we do not clobber
+    # another one in case the same user submits >1 workflow at the same time
+    # (which is something pretty rare). This is not super safe (since random
+    # numbers are not really random), but should suffice for this particular
+    # issue.
+    salt = '_%d' % (int(1e6 * random.random()))
+    work_dir += salt
 
     for dataset in datasets:
         # Create a instrument/mode Workflow instance (dataset independent)...
