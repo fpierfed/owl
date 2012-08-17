@@ -12,29 +12,6 @@ import plugins
 
 
 
-def _get_number_of_ccds(repository, dataset):
-    """
-    Return the number of extensions/CCDs in the given dataset (i.e. in the FITS
-    file `repository`/`dataset`.fits). In this case we assume that the FITS file
-    is simply a BCW text file and its CCDs are lines in the file.
-    """
-    lines = [l
-             for l in open(os.path.join(repository,
-                                        dataset + '.fits')).readlines()
-             if(l.strip())]
-    return(len(lines))
-
-
-def _get_number_of_exposures(repository, dataset):
-    """
-    Return the number of _raw.fits files in the given ACS dataset/visit.
-    """
-    exposures = [f for f in os.listdir(repository) if f.startswith(dataset) and
-                                                      f.endswith('_raw.fits')]
-    return(len(exposures))
-
-
-
 
 
 
@@ -145,104 +122,16 @@ class Workflow(object):
 
 
 
-class BcwWorkflow(Workflow):
-    """
-    Simple BCW workflow.
-    """
-    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
-                           flavour, extra_env):
-        return({'num_ccds': _get_number_of_ccds(repository, dataset)})
 
 
 
-class BcwIrodsWorkflow(Workflow):
-    """
-    Simple BCW+iRODS workflow.
-    """
-    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
-                           flavour, extra_env):
-        # Root iRODS collection.
-        root = '/fooZone/home/foo'
-
-        # Remember to remove root and any leading slash from repository.
-        if(repository.startswith(root)):
-            repository.replace(root, '', 1)
-        if(repository.startswith('/')):
-            repository = repository[1:]
-
-        # Derive the number of CCDs.
-        number = _get_number_of_ccds_from_irods(repository, dataset)
-
-        return({'num_ccds': number,
-                'work_dir': work_dir,
-                'user': 'foo',
-                'zone': 'fooZone',
-                'password': 'condor',
-                'server': 'jwdmsdevvm2.stsci.edu',
-                'port': 1247,
-                'root': root,
-                'repository': repository})
 
 
 
-class AcsWorkflow(Workflow):
-    """
-    HLA/ACS workflow.
-    """
-    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
-                           flavour, extra_env):
-        return({'num_exposures': _get_number_of_exposures(repository, dataset)})
 
 
 
-class AcsSimpleWorkflow(Workflow):
-    """
-    ACS Simple workflow.
-    """
-    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
-                           flavour, extra_env):
-        # Exposures are *_raw.fits files inside repository/dataset. Just return
-        # the list of exposure root names.
-        directory = os.path.join(repository, dataset)
-        return({'exposures': [f[:-9] for f in os.listdir(directory) \
-                              if f.endswith('_raw.fits')]})
 
-
-
-def _get_number_of_ccds_from_irods(repository, dataset,
-                                   exe='/jwst/bin/irods.py',
-                                   user='foo',
-                                   zone='fooZone',
-                                   password='condor',
-                                   server='jwdmsdevvm2.stsci.edu',
-                                   port=1247,
-                                   root='/fooZone/home/foo'):
-    """
-    Fetch dataset from iRods and count the number of CCDs in it. Return that
-    number.
-    """
-    # FIXME: We should be getting all of these configs from a file.
-    # Create a temp file name.
-    (fid, path) = tempfile.mkstemp()
-    os.close(fid)
-    os.remove(path)
-
-    err = os.system('%s irods://%s.%s:%s@%s:%d%s/%s/%s.fits %s.fits' % (exe,
-                                                                   user,
-                                                                   zone,
-                                                                   password,
-                                                                   server,
-                                                                   port,
-                                                                   root,
-                                                                   repository,
-                                                                   dataset,
-                                                                   path))
-    if(err):
-        raise(Exception('Unable to access %s with iRODS' % (dataset)))
-
-    number = _get_number_of_ccds(*os.path.split(path))
-    os.remove(path + '.fits')
-    return(number)
 
 
 

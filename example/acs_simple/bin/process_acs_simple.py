@@ -45,6 +45,20 @@ MODE = 'simple'
 
 
 
+class AcsSimpleWorkflow(workflow.Workflow):
+    """
+    ACS Simple workflow.
+    """
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
+        # Exposures are *_raw.fits files inside repository/dataset. Just return
+        # the list of exposure root names.
+        directory = os.path.join(repository, dataset)
+        return({'exposures': [f[:-9] for f in os.listdir(directory) \
+                              if f.endswith('_raw.fits')]})
+
+
+
 def process(datasets, repository, template_root, code_root=CODE_ROOT,
             extra_env=None, work_root=WORK_ROOT, middleware='condor',
             verbose=False):

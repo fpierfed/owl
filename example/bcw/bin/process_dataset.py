@@ -69,6 +69,30 @@ WORK_ROOT = getattr(config, 'DIRECTORIES_WORK_ROOT')
 
 
 
+
+class BcwWorkflow(workflow.Workflow):
+    """
+    Simple BCW workflow.
+    """
+    def get_extra_keywords(self, code_root, repository, dataset, work_dir,
+                           flavour, extra_env):
+        return({'num_ccds': _get_number_of_ccds(repository, dataset)})
+
+
+
+def _get_number_of_ccds(repository, dataset):
+    """
+    Return the number of extensions/CCDs in the given dataset (i.e. in the FITS
+    file `repository`/`dataset`.fits). In this case we assume that the FITS file
+    is simply a BCW text file and its CCDs are lines in the file.
+    """
+    lines = [l
+             for l in open(os.path.join(repository,
+                                        dataset + '.fits')).readlines()
+             if(l.strip())]
+    return(len(lines))
+
+
 def process(datasets, repository, template_root, code_root=CODE_ROOT,
             extra_env=None, work_root=WORK_ROOT, middleware='condor',
             verbose=False):
