@@ -31,13 +31,13 @@ def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname):
     connection_tmplt = '%(flavour)s://%(user)s:%(passwd)s@%(host)s'
 
     # We need to handle a few special cases.
-    # 0. The password miught contain characters that need to be escaped.
+    # 0. The password might contain characters that need to be escaped.
     pwd = urllib.quote_plus(dbpassword)
 
     # 1. Database separator
     db_info = '/' + dbname
 
-    # 2. Yes/No port onformation and yes/no MSSQL.
+    # 2. Yes/No port information and yes/no MSSQL.
     if(dbport and dbport != -1 and not has_mssql):
         port_info += ':' + str(dbport)
     elif(dbport and dbport != -1):

@@ -67,20 +67,20 @@ with the twist that we will have N parallel instances of the B step, where N is 
 
 One thing to notice is that nowhere in the workflow description we refer to the data or how data is passed from one step to the next. Condor takes care of that (and is instructed to do so in our job description files/workflow description file as described below) by transferring inputs, outputs, logs and even executables from the submit machine to the worker nodes and back.
 
-A special note about files. Condor executes workflow steps (aka jobs) in a temporary directory (aka sandbox) on the remote worker node (the same applies for single-machine installations: Condor creates a temporary directory for executing each step and then deletes it). If needed, or otherwise instructed to do so (see below), Condor ill transfer the executable and/or any other file from the submit machine to that temporary sandbox on the worker node. By default, Condor will then transfer any file that was either created or modified in the sandbox back to the submit machine, in the work directory (i.e. the directory that OWL created for the workflow). In this scenario, each step can simply assume that all its input files are in the current working directory, and it can just write in the same directory with the confidence that things will just work.
+A special note about files. Condor executes workflow steps (aka jobs) in a temporary directory (aka sandbox) on the remote worker node (the same applies for single-machine installations: Condor creates a temporary directory for executing each step and then deletes it). If needed, or otherwise instructed to do so (see below), Condor will transfer the executable and/or any other file from the submit machine to that temporary sandbox on the worker node. By default, Condor will then transfer any file that was either created or modified in the sandbox back to the submit machine, in the work directory (i.e. the directory that OWL created for the workflow). In this scenario, each step can simply assume that all its input files are in the current working directory, and it can just write in the same directory with the confidence that things will just work.
 
 Alternatively (or in addition, we should say), steps can access input files and/or store output files directly on remote machines. This could be done in the step code itself, but it is probably better accomplished at the Condor level instead. In that case, workflow developers can just specify URLs for input/output files^4^. We will see an example of that below.
 
 Workflows need to be stored in the OWL template directory either as Condor-style workflows or single-file XML workflows. The template directory is by default the `templates` directory within the OWL install directory. Alternatively, an environment variable called `OWL_DIRECTORIES_TEMPLATE_ROOT` can be defined pointing to a user-specified directory instead.
 
-For our example, we will write a distributed grep. Our workflow will fetch some text from the web (we will use ''Remembrance of Things Past'' by Marcel Proust given its length to make things interesting), divide it in chunks of approxemately 10,000 lines each and perform a grep for a given word on each chunk in parallel. The gather step will then concatenates the results in order and writes them out to a file. The code for this example is attached to this page. 
+For our example, we will write a distributed grep. Our workflow will fetch some text from the web (we will use ''Remembrance of Things Past'' by Marcel Proust given its length to make things interesting), divide it in chunks of approxemately 10,000 lines each and perform a grep for a given word on each chunk in parallel. The gather step will then concatenate the results in order and writes them out to a file. The code for this example is attached to this page.
 
 
 
 === Create Your First Condor-Style Workflow ===
 First of all, download the [[attachment:example.tar.gz]] sample code archive and extract it somewhere convenient. Then cd into it:
 {{{
-vesta> tar zxf ~/example.tar.gz 
+vesta> tar zxf ~/example.tar.gz
 vesta> cd example
 vesta> find .
 .
@@ -127,8 +127,8 @@ Check the progress of the workflow using `condor_q` and look in the work directo
 Wait for the workflow to finish executing and then make sure that the output (`text.result`) makes sense. The `distributed_grep.py` script downloads the novel to /tmp/text.html, so we can manually check that the workflow produced the correct output:
 {{{
 vesta> grep love /tmp/text.html > /tmp/foo
-vesta> diff /tmp/foo /jwst/data/work/fpierfed_1329945687.905708/text.result 
-vesta> 
+vesta> diff /tmp/foo /jwst/data/work/fpierfed_1329945687.905708/text.result
+vesta>
 }}}
 which is the expected result.
 
@@ -152,18 +152,18 @@ workDir = os.path.join(WORK_ROOT, dirName)
 # No white spaces!
 dataset = 'GrepRun%d' % (int(now))
 
-# Create a instrument/mode Workflow instance (dataset independent)...
+# Create an instrument/mode Workflow instance (dataset independent)...
 W = workflow_factory(pattern, int(math.ceil(float(n) / float(N))), N)
 wflow = W(templateRoot=TEMPLATE_ROOT)
 # ... and submit it to the grid (for this particular piece of data).
-_id = wflow.execute(codeRoot=CODE_ROOT, 
-                    repository=REPOSITORY, 
-                    dataset=dataset, 
+_id = wflow.execute(codeRoot=CODE_ROOT,
+                    repository=REPOSITORY,
+                    dataset=dataset,
                     workDir=workDir)
 print('Dataset %s submitted as workflow %s' % (dataset, _id))
 }}}
 
-This is where the action is: we first download the text we want to grep, we figure out how many chunks we need to generate and pass that number, together with the grep patter (read through `sys.argv`) and the number of lines in the file to our workflow factory and get out a brand new Workflow sub-class `W`. In the mean time, we have created a temporary directory where all of our input/output and intermediate files (including logs) will be stored: `workDir`, which in the example above is `/jwst/data/work/fpierfed_1329945687.905708/`. We are now ready to instantiate `W` and tell it to go look for workflow templates in the `templates` directory. Then we execute our new workflow instance and print out its ID.
+This is where the action is: we first download the text we want to grep, we figure out how many chunks we need to generate and pass that number, together with the grep pattern (read through `sys.argv`) and the number of lines in the file to our workflow factory and get out a brand new Workflow sub-class `W`. In the mean time, we have created a temporary directory where all of our input/output and intermediate files (including logs) will be stored: `workDir`, which in the example above is `/jwst/data/work/fpierfed_1329945687.905708/`. We are now ready to instantiate `W` and tell it to go look for workflow templates in the `templates` directory. Then we execute our new workflow instance and print out its ID.
 
 Now would be a good time to checkout the four template files `example.dag`, which is pretty simple and `concatenate.job`,  `grep.job` and `split_page.job` which are pretty much what we could write in pure Condor. Note the use of template variables (anything enclosed in `{{ }}` as well the for loops in `concatenate.job`. Also notice how we are able to pass these variables in our code (`workflow_factory` utility function but also `workflow.py` in OWL) to the templates. Again, for more information on the template library that we use and its syntax, we refer to its home page^6^.
 
@@ -180,7 +180,7 @@ The last point is particularly important to keep in mind. Even the various insta
 ==== Improvement: Make our Distributed Grep Synchronous ====
 Download the second version of the example tarball: [[attachment:example2.tar.gz]] and just as before:
 {{{
-vesta> tar zxf ~/example2.tar.gz 
+vesta> tar zxf ~/example2.tar.gz
 vesta> cd example2
 vesta> find .
 .
@@ -211,9 +211,9 @@ transcended the narrow confines of his life as a man of the world. He had hardly
 Keep in mind that synchronous workflow `execute` method calls are only supported under Condor at the moment and are enabled by simply adding `wait=True` to the `execute` method argument list. Also important to notice is that the return type of the synchronous call is a tuple of a string (the workflow ID) and an integer (its exit code) whereas the return type of the default asynchronous call (`wait=False` being the default) is a simple string (the workflow ID):
 {{{
 # ... and submit it to the grid (for this particular piece of data).
-_id, err = wflow.execute(codeRoot=CODE_ROOT, 
-                         repository=REPOSITORY, 
-                         dataset=dataset, 
+_id, err = wflow.execute(codeRoot=CODE_ROOT,
+                         repository=REPOSITORY,
+                         dataset=dataset,
                          workDir=workDir,
                          wait=True)
 # print('Dataset %s submitted as workflow %s' % (dataset, _id))
