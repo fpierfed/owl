@@ -169,7 +169,7 @@ def process(datasets, repository, template_root, code_root=CODE_ROOT,
 
     for dataset in datasets:
         # Create a instrument/mode Workflow instance (dataset independent)...
-        wflow = workflow.BcwIrodsWorkflow(template_root=template_root)
+        wflow = BcwIrodsWorkflow(template_root=template_root)
         # ... and submit it to the grid (for this particular piece of data).
         _id = wflow.execute(code_root=code_root,
                             repository=repository,
