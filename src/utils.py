@@ -1,8 +1,18 @@
 """
 Useful code that does not belong any other place.
 """
+import logging
 import os
 import urllib
+
+
+
+# Constants
+LOG_FMT = '%(levelname)s - ' + \
+          '%(hostname)s - ' + \
+          '%(asctime)s %(module)s.%(funcName)s (%(filename)s) - ' + \
+          '%(message)s'
+
 
 
 
@@ -56,3 +66,22 @@ def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname):
                                          'port_info': port_info,
                                          'db_info': db_info}
     return(connection_str)
+
+
+def get_logger(file_name, verbosity, log_fmt=LOG_FMT):
+    """
+    Return a logger object that can be used to emit log messages to the file
+    `file_name` using the logging threshold `verbosity`, which has to be a valid
+    logging module constant (i.e. CRITICAL, ERROR, WARNING, INFO, DEBUG or one
+    of the aliases FATAL and WARN).
+    """
+    logger = logging.getLogger(__name__)
+    logger.setLevel(getattr(logging, verbosity))
+
+    handler = logging.handlers.RotatingFileHandler(filename=file_name,
+                                                   maxBytes=1024*1024,
+                                                   backupCount=10)
+    handler.setFormatter(logging.Formatter(log_fmt))
+
+    logger.addHandler(handler)
+    return(logger)
