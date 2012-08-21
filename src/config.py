@@ -53,6 +53,12 @@ from utils import db_connection_str
 
 
 
+
+# Define the default values for misssing configuration parameters. The format is
+# {section_name: {key: value}}
+DEFAULTS = {'DATABASE': {'port': -1},
+            'OWLD': {'max_msg_bytes': None, 'max_rows': None}}
+
 config = None
 prefix = sys.prefix
 etc_dir = os.path.join(sys.prefix, 'etc', 'owl')
@@ -67,6 +73,7 @@ if(os.path.exists(old_config)):
     msg = 'The old configuration file scheme is not supported. ' + \
           'Please move %s to the new location %s.' % (old_config, etc_dir)
     raise(RuntimeError(msg))
+del(old_config)
 
 # Read the config files. Here we support four cases:
 # 1. both sys_config and local_config exist
@@ -82,16 +89,21 @@ if(not os.path.exists(sys_config)):
     msg = 'OWL requires the configuration file %s to be present.' % (sys_config)
     raise(RuntimeError(msg))
 
-# Load the system config
-config = ConfigParser.RawConfigParser(defaults={'port': -1,
-                                                'max_msg_bytes': None,
-                                                'max_rows': None})
-config.read(sys_config)
+# Load the system config. The ConfigParser.RawConfigParser class already handles
+# the 3 cases above for us. Just ask it to read an ordered list of file names
+# and it will override the n-th with the content of the n+1-th file.
+config = ConfigParser.RawConfigParser()
+config.read([sys_config, local_config])
 
-# Load the local config and override whatever appropriate.
-lconfig = ConfigParser.RawConfigParser(defaults={'port': -1})
-if(os.path.exists(local_config)):
-    config.read(local_config)
+# Fill in for the missing keys using data from the DEFAULTS dict. We do not use
+# the defaults parameter in RawConfigParser() because it does not allow to
+# specify per-section defaults and hence pollutes our namespace.
+for section in config.sections():
+    section_defs = DEFAULTS.get(section.upper(), {})
+    section_keys = config.options(section)
+    for key, value in section_defs.items():
+        if(key not in section_keys):
+            config.set(section, key, value)
 
 # Fetch the user environment and override whatever appropriate.
 env = os.environ
@@ -108,22 +120,6 @@ for section in config.sections():
         all_vars.append(var)
 
         config_val = config.get(section, option)
-        try:
-            config_val = lconfig.get(section, option)
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-            pass
-        setattr(module, var, env.get(env_var, config_val))
-
-# Now let's see if we have sections/variables in the local config that we do not
-# have in the system config.
-for section in lconfig.sections():
-    for option in lconfig.options(section):
-        var = '%s_%s' % (section.upper(), option.upper())
-        if(var in all_vars):
-            continue
-
-        env_var = 'OWL_' + var
-        config_val = lconfig.get(section, option)
         setattr(module, var, env.get(env_var, config_val))
 
 # Now the template root directory. We might end up putting this in the config
@@ -141,6 +137,37 @@ DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
                                                     DATABASE_PORT,
                                                     DATABASE_DATABASE))
 
+# Cleanup the namespace a bit. Should we just manipulate __all__ instead?
+try:
+    del(env)
+    del(here)
+    del(section)
+    del(option)
+    del(config)
+    del(lconfig)
+    del(section_defs)
+    del(var)
+    del(key)
+    del(config_val)
+    del(all_vars)
+    del(section_keys)
+    del(env_var)
+    del(value)
+except:
+    pass
+
+
+
+
+
+
 if __name__ == '__main__' :
     print('System configuration file: %s' % (sys_config))
     print('Local configuration file: %s' % (local_config))
+
+    print('Active configuration:')
+    key_vals = module.__dict__.items()
+    key_vals.sort()
+    for key, val in key_vals:
+        if(key.isupper()):
+            print('  %s = %s' % (key, str(val)))

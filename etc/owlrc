@@ -2,21 +2,21 @@
 # OWL configuration file
 #
 # OWL looks for its configuration file here:
-#   sys.prefix/etc/owl/owlrc
-#   sys.prefix/etc/owl/owlrc.local
+#   <sys.prefix>/etc/owl/owlrc
+#   <sys.prefix>/etc/owl/owlrc.local
 #
 [Database]
-# SQLAlchemy supported databases
+# SQLAlchemy supported databases (e.g. sqlite, mssql, postgres etc.)
 flavour = sqlite
-# Database host
+# Database host (not used for sqlite)
 host =
-# Database port
+# Database port (not used for sqlite)
 # port =
-# Database reader user password
+# Database reader user password (not used for sqlite)
 password =
-# Database reader user
+# Database reader user (not used for sqlite)
 user =
-# Name of he database to use
+# Name of he database to use/name of the sqlite database file.
 database = /jwst/data/owl.sqlite
 
 [Directories]
@@ -28,9 +28,20 @@ work_root = /jwst/data/work
 repository = /jwst/data/repository/raw
 
 [Owld]
+# The port OWLD listens to.
 port = 9999
 
-
-
-
-
+[Logging]
+# Directory where all OWL related log files will be stored. It defaults to
+#   /var/log
+# There are two log files being generated:
+#   owld.log
+#   owl.log
+log_dir = /var/log
+# Logging level: valid values are (in increasing verbosity)
+#   CRITICAL, ERROR, WARNING, INFO, DEBUG
+# There are two aliases that can be used in addition to the values above:
+#   FATAL = CRITICAL
+#   WARN = WARNING
+# If no log level is specified, it defaults to DEBUG.
+log_level = DEBUG
