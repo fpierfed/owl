@@ -57,7 +57,8 @@ from utils import db_connection_str
 # Define the default values for misssing configuration parameters. The format is
 # {section_name: {key: value}}
 DEFAULTS = {'DATABASE': {'port': -1},
-            'OWLD': {'max_msg_bytes': None, 'max_rows': None}}
+            'OWLD': {'max_msg_bytes': None, 'max_rows': None},
+            'LOGGING': {'log_dir': '/var/log', 'log_level': 'DEBUG'}}
 
 config = None
 prefix = sys.prefix
@@ -136,6 +137,14 @@ DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
                                                     DATABASE_HOST,
                                                     DATABASE_PORT,
                                                     DATABASE_DATABASE))
+
+# Sanity check on the log levels.
+import logging
+if(not hasattr(logging, LOGGING_LOG_LEVEL)):
+    msg = 'Fatal Error: invalid log_level specified (%s).' \
+          % (LOGGING_LOG_LEVEL)
+    raise(RuntimeError(msg))
+
 
 # Cleanup the namespace a bit. Should we just manipulate __all__ instead?
 try:
