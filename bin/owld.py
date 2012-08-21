@@ -27,6 +27,7 @@ import asyncore
 import asynchat
 import inspect
 import json
+import logging
 import os
 import Queue
 import select
@@ -42,6 +43,7 @@ from owl import blackboard
 # Constants
 OWLD_METHOD_PREFIX = 'owlapi_'
 HEARTBEAT_TIMEOUT = 10
+LOG_NAME = 'owld.log'
 
 
 
@@ -79,7 +81,8 @@ class RequestHandler(asynchat.async_chat):
     # asynchat.async_chat has a lot of publich methods, nothing we can do about
     # that, hence:
     # pylint: disable=R0904
-    def __init__(self, request, cmd_queue, cmd_id_queue, max_msg_bytes=None):
+    def __init__(self, request, cmd_queue, cmd_id_queue, logger,
+                 max_msg_size=None):
         asynchat.async_chat.__init__(self, request)
         self.set_terminator('\n')
 
@@ -87,7 +90,8 @@ class RequestHandler(asynchat.async_chat):
         self.request = request
         self.cmd_queue = cmd_queue
         self.cmd_id_queue = cmd_id_queue
-        self.max_msg_bytes = max_msg_bytes
+        self.max_msg_bytes = max_msg_size
+        self._logger = logger
         return
 
     def collect_incoming_data(self, data):
@@ -100,6 +104,8 @@ class RequestHandler(asynchat.async_chat):
             # Too much data!
             msg = 'too much data (%d bytes > %d bytes)' \
                   % (len(self.indata), self.max_msg_bytes)
+            self._logger.warn(msg)
+
             self.indata = msg + self.terminator
             self.reply(msg)
         return
@@ -109,7 +115,7 @@ class RequestHandler(asynchat.async_chat):
         This gets called every time the client send us a terminator char. We
         put the command (encoded in self.indata) into the appropriate queue.
         """
-        print('Got %s' % (self.indata))
+        self._logger.debug('Got %s' % (self.indata))
 
         # Parse the JSON string and get a new ID for the command. Remember:
         # what we get from the client is a simple JSON string of the form
@@ -122,15 +128,13 @@ class RequestHandler(asynchat.async_chat):
         try:
             cmd_spec = json.loads(self.indata)
         except:
-            # TODO: We have an error but we do not close the connection?
-            print('Warning: ignored malformed JSON command %s' \
-                  % (str(self.indata)))
+            self._logger.warn('Warning: ignored malformed JSON command %s' \
+                              % (str(self.indata)))
             self.indata = ''
             return
         cmd_id = new_command_id(self.cmd_id_queue)
 
         # Remember that we only want tuples in our queues.
-        # TODO: does the above make sense?
         self.cmd_queue.put((tuple(cmd_spec), (cmd_id, self.reply)))
         self.indata = ''
         return
@@ -151,13 +155,15 @@ class CommandMonitor(asyncore.dispatcher):
     # asyncore.dispatcher has a lot of publich methods, nothing we can do about
     # that, hence:
     # pylint: disable=R0904
-    def __init__(self, ipaddr, port, cmd_queue, max_msg_bytes=None):
+    def __init__(self, ipaddr, port, cmd_queue, logger, max_msg_size=None):
         asyncore.dispatcher.__init__(self)
 
         self.cmd_queue = cmd_queue
         self.cmd_id_queue = CommandIDQueue()
 
-        self.max_msg_bytes = max_msg_bytes
+        self.max_msg_bytes = max_msg_size
+
+        self._logger = logger
 
         # Start the actual service.
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -165,7 +171,7 @@ class CommandMonitor(asyncore.dispatcher):
         self.bind((ipaddr, port))
         self.listen(1000)
 
-        print('*** Monitoring user input.')
+        self._logger.debug('Monitoring user input.')
         return
 
     def handle_accept(self):
@@ -177,9 +183,14 @@ class CommandMonitor(asyncore.dispatcher):
         if(pair is None):
             return
 
+        self._logger.debug('Client connected from %s:%d' % pair[1])
+
         # request, client_address = pair
-        RequestHandler(pair[0], self.cmd_queue, self.cmd_id_queue,
-                       self.max_msg_bytes)
+        RequestHandler(request=pair[0],
+                       cmd_queue=self.cmd_queue,
+                       cmd_id_queue=self.cmd_id_queue,
+                       max_msg_size=self.max_msg_bytes,
+                       logger=self._logger)
         return
 
 
@@ -193,8 +204,9 @@ class Daemon(object):
            those commands to OWL (and the results back to the client).
         2. Sends keepalive messages to the Condor Master (is present).
     """
-    def __init__(self, ipaddr, port, heartbeat_timeout, max_msg_bytes=None,
-                 max_rows=None, apiprefix=OWLD_METHOD_PREFIX):
+    def __init__(self, ipaddr, port, heartbeat_timeout, logger,
+                 max_msg_size=None, max_rows=None,
+                 apiprefix=OWLD_METHOD_PREFIX):
         """
         Initialize an OWL Daemon.
 
@@ -202,7 +214,8 @@ class Daemon(object):
             port: network port to listen to - integer
             heartbeat_timeout: the number of seconds to wait before sending out
                 a heartbeat signal (to the Condor Master) - float
-            max_msg_bytes: if neither None nor 0, the maximum size in bytes for
+            logger: a (required) logging.logger instance.
+            max_msg_size: if neither None nor 0, the maximum size in bytes for
                 a message sent over `port`. If specified and if the incoming
                 data packet is larger that that, it will get ignored - integer
             max_rows: if neither None nor 0, the maximum number of rows API
@@ -211,6 +224,7 @@ class Daemon(object):
                 API method - string
         """
         self._max_rows = max_rows
+        self._logger = logger
 
         # Send a heartbeat every heartbeat_timeout seconds.
         self.hb_timeout = heartbeat_timeout
@@ -221,9 +235,14 @@ class Daemon(object):
         # Init a command queue.
         self.cmd_queue = CommandQueue()
 
+        self._logger.info('OWLD initialized.')
+
         # Monitor for user commands.
-        self.cmd_monitor = CommandMonitor(ipaddr, port, self.cmd_queue,
-                                          max_msg_bytes)
+        self.cmd_monitor = CommandMonitor(ipaddr=ipaddr,
+                                          port=port,
+                                          cmd_queue=self.cmd_queue,
+                                          max_msg_size=max_msg_size,
+                                          logger=self._logger)
         return
 
     def run(self, use_poll=False, timeout=1., sleep_time=.1):
@@ -271,18 +290,18 @@ class Daemon(object):
         # We prefix method name with self.prefix as those are the only methods
         # we export to the outside world.
         if(not (isinstance(cmd_spec, tuple) and len(cmd_spec) == 2)):
-            # TODO: We have an error but we do not close the connection?
-            print('Warning: ignored malformed command %s' \
-                  % (str(cmd_spec)))
+            self._logger.warn('Warning: ignored malformed command %s' \
+                              % (str(cmd_spec)))
             return
 
         (meth_spec, (cmd_id, callback)) = cmd_spec
         meth_spec = list(meth_spec)
         method_name = self.prefix + meth_spec[0]
         if(not hasattr(self, method_name)):
-            # TODO: We have an error but we do not close the connection?
-            callback('Warning: ignored unsupported command %s' \
-                     % (str(meth_spec[0])))
+            msg = 'Warning: ignored unsupported command %s' \
+                  % (str(meth_spec[0]))
+            self._logger.warn(msg)
+            callback(msg)
             return
 
         # Do we have keyword arguments or just positional args?
@@ -299,9 +318,11 @@ class Daemon(object):
         """
         Cleanup and quit.
         """
+        self._logger.info('OWLD stopping.')
+        logging.shutdown()
         return
 
-    def owlapi_echo(self, message):
+    def owlapi_echo(self, message=''):
         """
         Simple echo service.
 
@@ -342,7 +363,7 @@ class Daemon(object):
         ads = condor.condor_status(timeout=timeout)
         return([ad.Name for ad in ads])
 
-    def owlapi_resources_get_info(self, name, timeout=condor.TIMEOUT):
+    def owlapi_resources_get_info(self, name=None, timeout=condor.TIMEOUT):
         """
         Return the full ClassAd for the given resource name as a dictionary.
 
@@ -352,6 +373,9 @@ class Daemon(object):
         Return
             ClassAd instance as dictionary
         """
+        if(name is None):
+            return
+
         ads = condor.condor_status(name, timeout=timeout)
         if(not ads):
             return
@@ -416,9 +440,10 @@ class Daemon(object):
                 for e in blackboard.listEntries(owner=owner,
                                                 dataset=dataset,
                                                 limit=limit,
-                                                offset=offset)])
+                                                offset=offset,
+                                                newest_first=newest_first)])
 
-    def owlapi_jobs_get_info(self, job_id):
+    def owlapi_jobs_get_info(self, job_id=None):
         """
         Return all info about the given blackboard entry (identified by its
         GlobalJobId `job_id`) as a Python dictionary.
@@ -429,6 +454,9 @@ class Daemon(object):
         Return
             the given blackboard entry as a dictionay.
         """
+        if(job_id is None):
+            return
+
         try:
             entry = blackboard.getEntry(job_id)
         except:
@@ -495,13 +523,13 @@ class Daemon(object):
             0: success
             255: both `job_id` and `owner` are None
             254 if job_id is not a valid Condor (local or global) job ID
-            253: if `priority` is not a positive (or 0) integer
+            253: if `priority` is not an integer
             otherwise: error condition (the same returned by condor_release)
         """
         return(condor.condor_setprio(priority, job_id=job_id, owner=owner,
                                      timeout=timeout))
 
-    def owlapi_jobs_get_priority(self, job_id, timeout=condor.TIMEOUT):
+    def owlapi_jobs_get_priority(self, job_id=None, timeout=condor.TIMEOUT):
         """
         Get the `priority` of the job corresponding to the given GlobalJobId
         `job_id`. Return the job priority or None in case of error.
@@ -517,6 +545,9 @@ class Daemon(object):
             int: job priority
             None: error condition
         """
+        if(job_id is None):
+            return
+
         return(condor.condor_getprio(job_id, timeout=timeout))
 
 
@@ -582,17 +613,8 @@ def build_message(pid, timeout):
 
 
 if(__name__ == '__main__'):
-    try:
-        from owl import config
-    except:
-        print('WARNING: Unable to load OWL config. ')
-        print('         Using port = 9999')
-        print('         Using max_msg_bytes = None (i.e. unlimited)')
-        print('         Using max_rows = None (i.e. unlimited)')
-        config = object()
-        config.OWLD_PORT = 9999
-        config.OWLD_MAX_MSG_BYTES = None
-        config.OWLD_MAX_ROWS = None
+    from owl import config
+    from owl import utils
 
 
     port = int(config.OWLD_PORT)
@@ -614,15 +636,22 @@ if(__name__ == '__main__'):
         if(max_rows <= 0):
             max_rows = None
 
-    print('Starting OWLD on %s:%d' % (hostname, port))
+    # Where are we supposed to write logs and which logging level should we use?
+    log_file_name = os.path.join(config.LOGGING_LOG_DIR, LOG_NAME)
+    verbosity = config.LOGGING_LOG_LEVEL
+    logger = utils.get_logger(file_name=log_file_name,
+                              verbosity=config.LOGGING_LOG_LEVEL)
+    logger.info('OWL Configuration: ' + \
+                '; '.join(config.CONFIG_TEXT.split('\n')))
+
     daemon = Daemon(ipaddr=this_ip,
                     port=port,
                     heartbeat_timeout=HEARTBEAT_TIMEOUT,
-                    max_msg_bytes=max_msg_bytes,
-                    max_rows=max_rows)
+                    max_msg_size=max_msg_bytes,
+                    max_rows=max_rows,
+                    logger=logger)
     try:
         daemon.run()
     except KeyboardInterrupt:
         daemon.stop()
-        print('\nAll done.')
     sys.exit(0)

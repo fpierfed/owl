@@ -2,6 +2,7 @@
 Useful code that does not belong any other place.
 """
 import logging
+from logging import handlers
 import os
 import urllib
 
@@ -9,7 +10,6 @@ import urllib
 
 # Constants
 LOG_FMT = '%(levelname)s - ' + \
-          '%(hostname)s - ' + \
           '%(asctime)s %(module)s.%(funcName)s (%(filename)s) - ' + \
           '%(message)s'
 
@@ -78,9 +78,9 @@ def get_logger(file_name, verbosity, log_fmt=LOG_FMT):
     logger = logging.getLogger(__name__)
     logger.setLevel(getattr(logging, verbosity))
 
-    handler = logging.handlers.RotatingFileHandler(filename=file_name,
-                                                   maxBytes=1024*1024,
-                                                   backupCount=10)
+    handler = handlers.RotatingFileHandler(filename=file_name,
+                                           maxBytes=1024*1024,
+                                           backupCount=10)
     handler.setFormatter(logging.Formatter(log_fmt))
 
     logger.addHandler(handler)

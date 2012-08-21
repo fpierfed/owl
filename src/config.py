@@ -146,6 +146,15 @@ if(not hasattr(logging, LOGGING_LOG_LEVEL)):
     raise(RuntimeError(msg))
 
 
+# Finally, export all config in text form for logging.
+CONFIG_TEXT = ''
+key_vals = module.__dict__.items()
+key_vals.sort()
+for key, val in key_vals:
+    if(key.isupper() and key != 'CONFIG_TEXT'):
+        CONFIG_TEXT += '%s = %s\n' % (key, str(val))
+
+
 # Cleanup the namespace a bit. Should we just manipulate __all__ instead?
 try:
     del(env)
@@ -169,14 +178,9 @@ except:
 
 
 
-
 if __name__ == '__main__' :
     print('System configuration file: %s' % (sys_config))
     print('Local configuration file: %s' % (local_config))
 
     print('Active configuration:')
-    key_vals = module.__dict__.items()
-    key_vals.sort()
-    for key, val in key_vals:
-        if(key.isupper()):
-            print('  %s = %s' % (key, str(val)))
+    print(CONFIG_TEXT)
