@@ -1,0 +1,53 @@
+OWL TODO List from OWL Code Review, STScI, week of Aug. 12, 2012
+
+Status  #   Description
+DONE    01. Copy example from trac to example dir.
+DONE    02. Make sdpq and dads separate projects.
+DONE    03. Move all spurious code in bin/ to example specific dirs.
+DONE    04. bin/blackboard-init.py: add doc sctring to explain what it does.
+DONE    05. bin/dummyProcess.py: define SIF in the doc strings.
+DONE    06. bin/irods.py: use which to find iget/iput instead of hard-coding it.
+TODO    07. bin/owl_client.py: better as independent package?
+DONE    08. bin/join.py: add docstring telling that it is part of BCW and what
+            it does.
+DONE    09. bin/owl_client.py: Add {error_code: error_message} global dict.
+DONE    10. bin/owl_client.py: add methods to check if owld is alive.
+DONE    11. src/condorutils:condor_getprio: add a timeout.
+DONE    12. bin/owld/owl_client.py: expose timeout arg in every API call.
+DONE    13. use logging framework instead of print statements (and put logs in a
+            DB).
+DONE    14. bin/owld.py:Daemon.__init__ specify timeout and sleep insterval.
+DONE    15. bin/owld.py:RequestHandler.collect_incoming_data add incoming
+            message size limit and make that easy to change.
+DONE    16. bin/owld.py:Deamon.owlapi_jobs_get_list make sure that offset=-1
+            works by allowing starting form the most recent job.
+DONE    17. bin/owld.py:Deamon.owlapi_jobs_get_list put a max limit on limit.
+DONE    18. Investigate: does the Condor job priority start form 0 or can it go
+            negative? Answer: Yes.
+DONE    19. bin/owl_job_hook.py:get_owl_environment explain why we meed to
+            escape spaces.
+DONE    20. remove util
+DONE    21. owld/condorutils priorities can be negative.
+DONE    22. src/workflow.py handle the case when the same user submits two
+            workflows at the same time (in making the work dir).
+TODO    23. general: ability to create a workflow with an initial given priority
+TODO    24. command-line tool to show the blackboard for a given user and
+            dataset.
+TODO    25. owld/condorutils hold/release all workflows of a given user and
+            dataset.
+TODO    26. owld/condorutils support restarting a rescue-d workdlow.
+TODO    27. owld/condorutils support killing a workflow.
+DONE    28. src/classad.py explain what the regex does.
+DONE    29. src/condorutils.py condor_prio -> condor_setprio
+TODO    30. src/condorutils.py:_run_* what should we do with STDOUT files in
+            case of errors? Shall we remove them or keep them around?
+TODO    31. Every time you start logging, dump - among other things - all the
+            config
+DONE    32. src/workflow.py remove example code and put it in separate example
+            files
+TODO    33. src/blackboard.py implement a timeout for DB calls.
+DONE    34. fix typos in code and/or comments.
+
+
+
+
