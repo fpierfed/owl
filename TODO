@@ -2,7 +2,9 @@ OWL TODO List from OWL Code Review, STScI, week of Aug. 12, 2012
 
 Status  #   Description
 DONE    01. Copy example from trac to example dir.
-DONE    02. Make sdpq and dads separate projects.
+DONE    02. Make sdpq and dads separate projects. See
+            https://github.com/fpierfed/dads and
+            https://github.com/fpierfed/sdpq
 DONE    03. Move all spurious code in bin/ to example specific dirs.
 DONE    04. bin/blackboard-init.py: add doc sctring to explain what it does.
 DONE    05. bin/dummyProcess.py: define SIF in the doc strings.
