@@ -256,10 +256,10 @@ class Plot(object):
         proc.stdin.write('set timefmt "%s"\n')
         if(xistime):
             proc.stdin.write('set xdata time\n')
-            proc.stdin.write('set format x "%m/%d"\n')
+            proc.stdin.write('set format x "%m/%y"\n')
         if(yistime):
             proc.stdin.write('set ydata time\n')
-            proc.stdin.write('set format y "%m/%d"\n')
+            proc.stdin.write('set format y "%m/%y"\n')
         proc.stdin.write('set datafile separator ","\n')
         proc.stdin.write('plot "%s" using 1:2 with lines title ""\n' \
                          % (file_name))
