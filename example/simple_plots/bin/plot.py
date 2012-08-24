@@ -171,7 +171,21 @@ def _fetchData(name, x, y, tmin=None, tmax=None):
     if(tmax):
         query = query.filter(xfield <= tmax)
     query = query.order_by(asc(xfield))
-    return(query.all())
+    result = query.all()
+    if(not result):
+        return(result)
+
+    # Now for something fun: some SQLServer drivers do not convert datetimes to
+    #  Python datetime instances. We do it here.
+    if(isinstance(result[0][0], str)):
+        fnx = lambda x: parse_date(x)
+    else:
+        fnx = lambda x: x
+    if(isinstance(result[0][1], str)):
+        fny = lambda y: parse_date(y)
+    else:
+        fny = lambda y: y
+    return([(fnx(x), fny(y)) for (x, y) in result])
 
 
 class Plot(object):
