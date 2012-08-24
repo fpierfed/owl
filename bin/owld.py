@@ -115,7 +115,7 @@ class RequestHandler(asynchat.async_chat):
         This gets called every time the client send us a terminator char. We
         put the command (encoded in self.indata) into the appropriate queue.
         """
-        self._logger.debug('Got "%s"' % (self.indata[:-1]))
+        self._logger.debug('Got "%s"' % (self.indata))
 
         # Parse the JSON string and get a new ID for the command. Remember:
         # what we get from the client is a simple JSON string of the form
