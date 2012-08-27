@@ -1,0 +1,14 @@
+OWL Client Module
+
+Communicate with an OWL system to both retrieve informations (query mode) or
+control it (command mode). For detailed API method description, please see the
+OWL API documentation at
+    https://github.com/fpierfed/owl/blob/master/docs/OWL_API.txt
+
+
+Installation
+    shell> python setup.py install
+
+
+Requirements
+Python 2.6 or later.
