@@ -52,6 +52,8 @@ def _parse_globaljobid(gjob_id):
     Return
         [<submit host>, <ClusterId>.<ProcId>, <unix timestamp>]
     """
+    gjob_id = str(gjob_id)
+
     if(not is_globaljobid(gjob_id)):
         raise(ValueError('%s is not a valid Condor GlobalJobId' \
                          % (str(gjob_id))))
@@ -65,6 +67,8 @@ def is_globaljobid(gjob_id):
     """
     Is the input `gjob_id` a valid Condor GlobalJobId?
     """
+    gjob_id = str(gjob_id)
+
     if(gjob_id.count('#') != 2):
         return(False)
     tokens = gjob_id.split('#')
@@ -233,7 +237,7 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
 
     if(job_id is not None):
         # Start assuming that job_id is a local ID.
-        arg = job_id
+        arg = str(job_id)
         # Then check if it is global.
         if(is_globaljobid(job_id)):
             [schedd, arg, _] = _parse_globaljobid(job_id)
@@ -342,6 +346,20 @@ def condor_getprio(job_id, timeout=TIMEOUT):
             pass
     os.remove(stdout)
     return(priority)
+
+def condor_rm(job_id=None, owner=None, timeout=TIMEOUT):
+    """
+    Wrapper around condor_rm: remove the job with the given `job_id` or all jobs
+    of the given `owner` (depending on which one is not None).  If both `job_id`
+    and `owner` are specified, `owner` is ignored.
+
+    Return
+        255 if both `job_id` and `owner` == None or
+        254 if job_id is not a valid Condor (local or global) job ID or
+        condor_hold exit code
+    """
+    # Invoke condot_hold.
+    return(_run_condor_job_cmd('condor_rm', [], job_id, owner, timeout))
 
 
 

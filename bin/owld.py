@@ -504,6 +504,24 @@ class Daemon(object):
         return(condor.condor_release(job_id=job_id, owner=owner,
                                      timeout=timeout))
 
+    def owlapi_jobs_kill(self, job_id=None, owner=None, timeout=condor.TIMEOUT):
+        """
+        Kill the job corresponding to the given GlobalJobId `job_id` (if not
+        None) or all the jobs of the given `owner` (if not None). It is
+        important to notice that `jobs_id` and `owner` are mutually exclusive
+        and `job_id` has precendence. Return condor_rm exit code.
+
+        Usage
+            jobs_kill(job_id=None, owner=None)
+
+        Return
+            0: success
+            255: both `job_id` and `owner` are None
+            254 if job_id is not a valid Condor (local or global) job ID
+            otherwise: error condition (the same returned by condor_hold)
+        """
+        return(condor.condor_rm(job_id=job_id, owner=owner, timeout=timeout))
+
     def owlapi_jobs_set_priority(self, priority, job_id=None, owner=None,
                                  timeout=condor.TIMEOUT):
         """

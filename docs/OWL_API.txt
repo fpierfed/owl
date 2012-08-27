@@ -49,7 +49,7 @@ Create an !OwlClient instance. The instance is going to connect to an owld runni
 
 === !OwlClient Methods ===
 
-==== Hardware Resources (IMPLEMENTED) ====
+==== Hardware Resources ====
  * resources_get_list()
   * Return list of compute resources available [!ResourceName, ...].
  * resources_get_info(''!ResourceName'')
@@ -58,18 +58,20 @@ Create an !OwlClient instance. The instance is going to connect to an owld runni
   * Return statistics on the cluster, including job submissions etc. as a Python dictionary.
 
 
-==== Job Monitoring (IMPLEMENTED) ====
+==== Job Monitoring ====
  * jobs_get_list(''owner''=None, ''dataset''=None, ''offset''=None, ''limit''=20)
   * Return list of submitted jobs [!JobSummary, ...] where !JobSummary is a Python dictionary with the following keys: !GlobalJobId, DAGManJobId, Dataset, Owner, DAGNodeName, DAGParentNodeNames, !ExitCode, !JobState, !JobDuration. Jobs (i.e. blackboard entries) are selected on the basis of the optional arguments (AND-ed): if ''owner'' is not None, then only jobs submitted by ''owner'' are returned. If ''datdaset'' is not None, then only jobs processing ''dataset'' are returned. Finally, pagination is implemented using ''offset'' and ''limit'' (i.e. the resulting list is results[offset:offset+limit]). If ''limit'' is None, then results are not truncated. If ''offset'' is None, the results are returned starting from index ''offset''.
  * jobs_get_info(''!GlobalJobId'')
   * Return details on a given job as a Python dictionary. This is the full Blackboard entry for the given !GlobalJobId.
 
 
-==== Job Control (IMPLEMENTED) ====
+==== Job Control ====
  * jobs_suspend(''job_id''=None, ''owner''=None)
   * Suspend the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_hold.
  * jobs_resume(''job_id''=None, ''owner''=None)
   * Resume the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_release.
+ * jobs_kill(''job_id''=None, ''owner''=None)
+  * Kill the job with the given !GlobalJobId ''job_id'' or, if that is None, all jobs of the given ''owner''. Return the exit code of condor_rm.
  * jobs_get_priority(''job_id'')
   * Return the priority of the job with the given !GlobalJobId ''job_id'' or None in case such a job is not currently queued/running. Priorities can be 0 (the default value) or any integer. Higher values mean higher job priorities. This does not look into historical jobs in the blackboard database but rather only in the active Condor queue.
  * jobs_set_priority(''priority'', ''job_id''=None, ''owner''=None)
@@ -78,7 +80,7 @@ Create an !OwlClient instance. The instance is going to connect to an owld runni
 
 
 
-==== Dataset Monitoring (IMPLEMENTED) ====
+==== Dataset Monitoring ====
 Implemented via "Job Monitoring" methods.
 
 
