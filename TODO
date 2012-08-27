@@ -1,20 +1,72 @@
-OWL TODO List for version 1.2
+#
+# Generated via
+#   shell> ghi list -v -- owl
+#
+# fpierfed/owl open issues
+#11: owl_client.py as independent package.
+@fpierfed opened this issue 4 minutes ago. [open]
+@fpierfed is assigned.
 
-Status  #   Description
-        01. bin/owl_client.py: better as independent package?
-        02. general: ability to create a workflow with an initial given priority
-        03. command-line tool to show the blackboard for a given user and
-            dataset.
-        04. owld/condorutils hold/release all workflows of a given user and
-            dataset.
-        05. owld/condorutils support restarting a rescue-d workdlow.
-        06. owld/condorutils support killing a workflow.
-        07. src/condorutils.py:_run_* what should we do with STDOUT files in
-            case of errors? Shall we remove them or keep them around?
-        08. Every time you start logging, dump - among other things - all the
-            config
-        09. src/blackboard.py implement a timeout for DB calls.
+    Since it does not depend on any external package, owl_client should really live a life of its own.
 
 
+#10: Timeouts for database calls.
+@fpierfed opened this issue 5 minutes ago. [open]
+@fpierfed is assigned.
+
+    Especially in blackboard.py implement a way to timeout database calls that take too long.
+
+
+#9: Unified logging strategy.
+@fpierfed opened this issue 6 minutes ago. [open]
+@fpierfed is assigned.
+
+    Implement a unified logging strategy for all pieces of code - including Condor. This strategy will have to involve logging software
+    versions and configurations, among other things.
+
+
+#8: Define unified strategy for handling temporary files.
+@fpierfed opened this issue 9 minutes ago. [open]
+@fpierfed is assigned.
+
+    Especially in condorutils.py where we create temp files to hold STDOUT, define a strategy for removing these files and/or keeping them
+    around in case of errors etc.
+
+
+#7: Support killing a workflow.
+@fpierfed opened this issue 11 minutes ago. [open]
+@fpierfed is assigned.
+
+    Implement in condorutils and export via owld a wrapper around condor_rm that kills the DAG condor_dagman job.
+
+
+#6: Support restarting a rescued workdlow.
+@fpierfed opened this issue 12 minutes ago. [open]
+@fpierfed is assigned.
+
+    Right now restarting a failed DAG by way of a rescue DAG is possible but only manually. Implement a way to do that via, for instance,
+    owld.py
+
+
+#5: Facitily to hold/release all workflows of a given user and dataset.
+@fpierfed opened this issue 14 minutes ago. [open]
+@fpierfed is assigned.
+
+    The functionality should be inplemented in condorutils.py and exported to owld.py
+
+
+#4: Command-line tool to show the blackboard for a given user and dataset.
+@fpierfed opened this issue 16 minutes ago. [open]
+@fpierfed is assigned.
+
+    This will have to query the blackboard and Condor to find out running jobs associated with a given dataset. It might have to walk the
+    DAG.
+
+
+#2: Ability to create a workflow with an initial given priority.
+@fpierfed opened this issue 21 minutes ago. [open]
+@fpierfed is assigned.
+
+    It would be useful to be able to specify a priority at workflow creation/submission.
 
 
