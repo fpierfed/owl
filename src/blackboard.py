@@ -253,7 +253,8 @@ class Blackboard(elixir.Entity):
         return('Blackboard instance.')
 
     def todict(self):
-        return(self.__dict__)
+        return(dict([(key, val) for (key, val) in self.__dict__.items()
+                     if not key.startswith('_')]))
 
 
 
