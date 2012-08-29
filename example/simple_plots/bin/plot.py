@@ -147,7 +147,7 @@ def parse_date(datestring, default_timezone=UTC):
 
 
 
-def _fetchData(name, x, y, tmin=None, tmax=None):
+def _fetchData(name, x, y, tmin=None, tmax=None, exit_code=0):
     """
     Do what I say :-) But remove None values.
     """
@@ -162,6 +162,8 @@ def _fetchData(name, x, y, tmin=None, tmax=None):
 
     query = elixir.session.query(xfield, yfield)
     query = query.filter_by(DAGNodeName=unicode(name))
+    if(exit_code is not None):
+        query = query.filter_by(ExitCode=exit_code)
 
     query = query.filter(xfield != None)
     query = query.filter(yfield != None)
