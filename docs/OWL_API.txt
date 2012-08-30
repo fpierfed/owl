@@ -61,6 +61,8 @@ Create an !OwlClient instance. The instance is going to connect to an owld runni
 ==== Job Monitoring ====
  * jobs_get_list(''owner''=None, ''dataset''=None, ''offset''=None, ''limit''=20)
   * Return list of submitted jobs [!JobSummary, ...] where !JobSummary is a Python dictionary with the following keys: !GlobalJobId, DAGManJobId, Dataset, Owner, DAGNodeName, DAGParentNodeNames, !ExitCode, !JobState, !JobDuration. Jobs (i.e. blackboard entries) are selected on the basis of the optional arguments (AND-ed): if ''owner'' is not None, then only jobs submitted by ''owner'' are returned. If ''datdaset'' is not None, then only jobs processing ''dataset'' are returned. Finally, pagination is implemented using ''offset'' and ''limit'' (i.e. the resulting list is results[offset:offset+limit]). If ''limit'' is None, then results are not truncated. If ''offset'' is None, the results are returned starting from index ''offset''.
+ * jobs_get_dag(''dagId'')
+  * Return list of submitted jobs [!JobSummary, ...] part of the same DAG/Workflow identified by ''dagId''. !JobSummary is a Python dictionary with same form as in jobs_get_list.
  * jobs_get_info(''!GlobalJobId'')
   * Return details on a given job as a Python dictionary. This is the full Blackboard entry for the given !GlobalJobId.
 

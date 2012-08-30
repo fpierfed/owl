@@ -123,6 +123,7 @@ from sqlalchemy import desc, asc
 
 from classad import Job
 from config import DATABASE_CONNECTION_STR
+import condorutils
 
 
 
@@ -250,7 +251,8 @@ class Blackboard(elixir.Entity):
     Instances = elixir.Field(elixir.Integer)
 
     def __repr__(self):
-        return('Blackboard instance.')
+        return('Blackboard(GlobalJobId=%s, ExitCode=%s)'
+               % (self.GlobalJobId, str(self.ExitCode)))
 
     def todict(self):
         return(dict([(key, val) for (key, val) in self.__dict__.items()
@@ -396,16 +398,16 @@ def listEntries(owner=None, dataset=None, limit=None, offset=None,
     return(query.all())
 
 
-def getEntry(entryId):
+def getEntry(globalJobId):
     """
-    Retrieve a single blackboard entry given its GlobalJobId.
+    Retrieve a single blackboard entry given its GlobalJobId `globalJobId`.
     """
     # Define the database connection.
     elixir.metadata.bind = DATABASE_CONNECTION_STR
     elixir.metadata.bind.echo = False
     elixir.setup_all()
 
-    query = Blackboard.query.filter_by(GlobalJobId=entryId)
+    query = Blackboard.query.filter_by(GlobalJobId=globalJobId)
     return(query.one())
 
 
@@ -414,6 +416,18 @@ def getOSFEntry(dagManJobId):
     Given a DAGManJobId `dagManJobId`, find all the blackboard entries that are
     associated with that DAG and present them in an OSF-like manner:
         Dataset, Owner, DAGManJobId, [Nodei JobState, Nodei ExitCode, ]
+
+    WARNING: while this works also if you do not specify a full Global Job ID
+    but just a ClusterId (which incidentally is what is stored in the database
+    as well as in each Job ClassAd), there is a risk. The risk is that we end up
+    returning Jobs/Blackboard entries that are not associated to that DAG but
+    simply happen to have the same DAGManJobId ClusterId (maybe because they
+    were submitted on a different host or because we reinstalled Condor in the
+    mean time etc.). For this reason, it is always better to use a GlobalJobId
+    or at least fabricate one with the right form:
+        <submit host>#<ClusterId>.0#<whatever>
+    Even that is not safe as we might have reinstalled Condor and resetted the
+    ClusterId counter...
     """
     # Define the database connection.
     elixir.metadata.bind = DATABASE_CONNECTION_STR
@@ -426,8 +440,20 @@ def getOSFEntry(dagManJobId):
     if(not dagManJobId):
         return
 
-    query = Blackboard.query.filter_by(DAGManJobId=dagManJobId)
+    # See if dagManJobId is a global job id or a local one.
+    submit_host = None
+    if(condorutils.is_globaljobid(dagManJobId)):
+        [submit_host, jobId, _] = condorutils.parse_globaljobid(dagManJobId)
+        dagManJobId = int(jobId.split('.')[0])
+
+    query = Blackboard.query.filter_by(DAGManJobId=unicode(dagManJobId))
+    if(submit_host):
+        # This is why global job ids are much safer (but not super safe).
+        submit_host = unicode(submit_host)
+        query = query.filter(Blackboard.GlobalJobId.startswith(submit_host))
     entries = query.order_by(Blackboard.ClusterId, Blackboard.ProcId).all()
+    if(not entries):
+        return
 
     # Now build the OSF-like entry.
     osfEntry = (entries[0].Dataset,

@@ -25,6 +25,7 @@ The OWL daemon implements the following JSON HTTP API described in
 import array
 import asyncore
 import asynchat
+import datetime
 import inspect
 import json
 import logging
@@ -143,7 +144,8 @@ class RequestHandler(asynchat.async_chat):
         """
         Simply send `message` back to the client.
         """
-        self.push(json.dumps(message) + '\n')
+        self._logger.debug('Replying "%s"' % (message))
+        self.push(json.dumps(message, default=datetime_handler) + '\n')
         self.close_when_done()
         return
 
@@ -443,6 +445,50 @@ class Daemon(object):
                                                 offset=offset,
                                                 newest_first=newest_first)])
 
+    def owlapi_jobs_get_dag(self, dagId):
+        """
+        Return the list of all Blackboard entries associated to the given DAG id
+        `dagId`. The DAG id can be either a global Id or a local id. Global ids
+        are safer as they ensure that only jobs submitted from the same host as
+        the input DAG are returned.
+
+        The results are sorted by ascending local Job id.
+
+        It is important to realize that further checks in the calling code are
+        needed as (even when using global DAG ids) since Condor stored only the
+        ClusterId of the parent dagman job, there is a degeneracy in the ClassAd
+        as well as database content. In particular, different DAGs submitted on
+        different hosts sharing the same Blackboard database could end up having
+        the same ClusterId. While this case is solved by using global ids,
+        another situation is not: reinstalling Condor resets the job id counter
+        and therefore can cause different DAGs to have the same ClusterId and
+        the same submit host. In that case, eiter wipe the Blackboard database
+        after reinstalling Condor or filter the results of this API call by
+        time.
+
+        Usage
+            jobs_get_dag(dagId)
+
+        Return
+            [{GlobalJobId, DAGManJobId, Dataset, Owner, JobStartDate,
+              DAGNodeName, DAGParentNodeNames, ExitCode, JobState, JobDuration}]
+        """
+        fields = ('GlobalJobId',
+                  'DAGManJobId',
+                  'Dataset',
+                  'Owner',
+                  'JobStartDate',
+                  'DAGNodeName',
+                  'DAGParentNodeNames',
+                  'ExitCode',
+                  'JobState',
+                  'JobDuration')
+        res = blackboard.getOSFEntry(str(dagId))
+        if(not res or len(res) != 4):
+            return([])
+        return([dict([(f, getattr(e, f, None)) for f in fields]) \
+                for e in res[3]])
+
     def owlapi_jobs_get_info(self, job_id=None):
         """
         Return all info about the given blackboard entry (identified by its
@@ -628,6 +674,12 @@ def build_message(pid, timeout):
     message.append(0) # padding
     message.append(socket.htons(timeout))
     return(message.tostring())
+
+
+datetime_handler = lambda obj: obj.isoformat() \
+                               if isinstance(obj, datetime.datetime) \
+                               else obj
+
 
 
 if(__name__ == '__main__'):

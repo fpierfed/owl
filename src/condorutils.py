@@ -40,7 +40,7 @@ def _parse_classads(stdout):
     return(ads)
 
 
-def _parse_globaljobid(gjob_id):
+def parse_globaljobid(gjob_id):
     """
     A Condor GlobalJobId has the following format:
         <submit host>#<ClusterId>.<ProcId>#<unix timestamp>
@@ -240,7 +240,7 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
         arg = str(job_id)
         # Then check if it is global.
         if(is_globaljobid(job_id)):
-            [schedd, arg, _] = _parse_globaljobid(job_id)
+            [schedd, arg, _] = parse_globaljobid(job_id)
             schedd_argv = ['-n', schedd]
         # Then, if it is neither global not local, error out.
         elif(not is_localjobid(job_id)):
@@ -324,7 +324,7 @@ def condor_getprio(job_id, timeout=TIMEOUT):
     # Just make sure we query the right Schedd.
     schedd_argv = []
     if(is_globaljobid(job_id)):
-        [schedd, job_id, _] = _parse_globaljobid(job_id)
+        [schedd, job_id, _] = parse_globaljobid(job_id)
         schedd_argv = ['-name', schedd]
 
     stdout = _run_and_get_stdout([which('condor_q')] +
