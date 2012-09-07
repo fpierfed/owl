@@ -13,6 +13,7 @@ STDIN to 'Prepare Job' Hooks lack these attributes: JobState, JobPid, NumPids,
 JobStartDate, RemoteSysCpu, RemoteUserCpu and ImageSize. OWL does add JobState
 if not present and sets it to 'Starting'.
 """
+import datetime
 import logging
 import os
 import sys
@@ -133,16 +134,20 @@ def close_blackboard_entry(job_ad):
 
 
 if(__name__ == '__main__'):
-    EXTRA_ATTRS = ('JobState', 'JobPid', 'NumPids', 'JobStartDate',
-                   'RemoteSysCpu', 'RemoteUserCpu', 'ImageSize')
+    EXTRA_ATTR = 'JobPid'
 
 
     # Setup logging.
     logger = setup_logger('owl_blackboard_hooks')
 
+    logger.debug('This script has been invoked as %s' % (' '.join(sys.argv)))
+    logger.debug('The current UTC datetime is %s'
+                 % (datetime.datetime.utcnow().isoformat()))
+
     # Read the raw ClassAd from STDIN and create a Job instance.
     logger.debug("Parsing STDIN.")
     classad = sys.stdin.read()
+    logger.debug('Raw ClassAd:\n---\n%s---' % (classad))
 
     # Determine the role of this hook.
     role = None
@@ -152,10 +157,7 @@ if(__name__ == '__main__'):
     else:
         exitReason = None
         n = 0
-        for attr in EXTRA_ATTRS:
-            if(attr + ' =' in classad):
-                n += 1
-        if(n > len(EXTRA_ATTRS) / 2.):
+        if(EXTRA_ATTR + ' =' in classad):
             role = 'update_job'
         else:
             role = 'prepare_job'
