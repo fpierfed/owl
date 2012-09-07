@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 import time
 
-from owl.classad import ClassAd
-from owl.utils import which
+from .classad import ClassAd
+from .utils import which
 
 
 
