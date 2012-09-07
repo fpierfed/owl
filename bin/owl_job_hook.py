@@ -134,6 +134,14 @@ def close_blackboard_entry(job_ad, logger=None):
     # Create a Job instance from the ClassAd.
     job = Job.new_from_classad(job_ad)
 
+    # Make sure that the job CompletionDate is not 0 (as it seems to be all the
+    # time).
+    if(job.CompletionDate == 0):
+        job.CompletionDate = job.JobStartDate + job.JobDuration
+        if(logger):
+            logger.debug('CompletionDate = 0 in an exit hook: setting it to %d'
+                         % (job.CompletionDate))
+
     # Close the Blackboard entry corresponding to job.
     blackboard.closeEntry(job)
     return
