@@ -84,37 +84,46 @@ def setup_logger(name):
 
 
 
-def update_blackboard_entry(job_ad):
+def update_blackboard_entry(job_ad, logger=None):
     """
-    Update the Blackboard entry corresponding to the given Job ClassAd and
-    create it if it is not there.
+    Update the Blackboard entry corresponding to the given Job ClassAd.
     """
     from owl.classad import Job
     from owl import blackboard
 
 
-    # Create a Job instance from the ClassAd.
-    job = Job.new_from_classad(job_ad)
+    # Create a Job instance from the ClassAd and use it to update the BB.
+    blackboard.updateEntry(Job.new_from_classad(job_ad))
+    return
+
+
+def create_blackboard_entry(job_ad, logger=None):
+    """
+    Create a new Blackboard entry from `job_ad`. In case a Blackboard entry with
+    the same GlobalJobId already exists (which would happen e.g. in a rescue
+    DAG), fallback to an update.
+    """
+    from owl.classad import Job
+    from owl import blackboard
 
     # Now, we could be in a rescue DAG, meaning that the blackboard entry might
     # already be there. If this is the case, we just update that entry and not
     # create a new one.
     entry = None
+    job = Job.new_from_classad(job_ad)
     try:
         entry = blackboard.getEntry(entryId=job.GlobalJobId)
     except:
         pass
 
     if(entry):
-        # Tell the Blackboard that we have a new Job starting up.
-        blackboard.updateEntry(job)
+        update_blackboard_entry(job_ad, logger)
     else:
-        # Tell the Blackboard that we have a new Job starting up.
         blackboard.createEntry(job)
     return
 
 
-def close_blackboard_entry(job_ad):
+def close_blackboard_entry(job_ad, logger=None):
     """
     Close the Blackboard entry corresponding to the given Job ClassAd.
     """
@@ -176,16 +185,20 @@ if(__name__ == '__main__'):
 
 
     if(role == 'job_exit'):
-        # Close the Blackboard entry and be happy.
         fn = close_blackboard_entry
-    else:
-        # create (or uodate if already there) a Blackboard entry for job.
+    elif(role == 'prepare_job'):
+        fn = create_blackboard_entry
+    elif(role == 'update_job'):
         fn = update_blackboard_entry
+    else:
+        # What did they ask us to do again?????
+        logger.warning('Unsupported hook role: exiting with no action.')
+        sys.exit(0)
 
     # What are you waiting for?
     logger.debug('Upodating the blackboard.')
     try:
-        fn(classad)
+        fn(classad, logger)
     except:
         logger.exception('Error updating the database.')
     else:
