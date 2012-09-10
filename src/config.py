@@ -56,7 +56,7 @@ from utils import db_connection_str
 
 # Define the default values for misssing configuration parameters. The format is
 # {section_name: {key: value}}
-DEFAULTS = {'DATABASE': {'port': -1},
+DEFAULTS = {'DATABASE': {'port': -1, 'driver': None},
             'OWLD': {'max_msg_bytes': None, 'max_rows': None},
             'LOGGING': {'log_dir': '/var/log', 'log_level': 'DEBUG'}}
 
@@ -136,7 +136,8 @@ DATABASE_CONNECTION_STR = env.get('OWL_DATABASE_CONNECTION_STR',
                                                     DATABASE_PASSWORD,
                                                     DATABASE_HOST,
                                                     DATABASE_PORT,
-                                                    DATABASE_DATABASE))
+                                                    DATABASE_DATABASE,
+                                                    DATABASE_DRIVER))
 
 # Sanity check on the log levels.
 import logging

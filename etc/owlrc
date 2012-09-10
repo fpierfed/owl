@@ -18,6 +18,8 @@ password =
 user =
 # Name of he database to use/name of the sqlite database file.
 database = /jwst/data/owl.sqlite
+# Optional driver name, only used for mssql.
+driver = FreeTDS
 
 [Directories]
 # Where to find the pipeline code (for the Grid sake).

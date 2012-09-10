@@ -27,7 +27,8 @@ def which(exe):
     return(None)
 
 
-def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname):
+def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname,
+                      driver=None):
     """
     Do the right thing and concoct a proper database connection string for the
     elixir/SQLAlchemy modules. Do so in a way that is mindful of DB vendor
@@ -55,7 +56,10 @@ def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname):
 
     # 3. MSSSQL wants a different connection string if a port is specified. Bug?
     if(has_mssql):
-        connection_tmplt += '%(db_info)s%(port_info)s'
+        if(driver):
+            connection_tmplt += '%(db_info)s%(port_info)s&driver=%(driver)s'
+        else:
+            connection_tmplt += '%(db_info)s%(port_info)s'
     else:
         connection_tmplt += '%(port_info)s%(db_info)s'
 
@@ -64,7 +68,8 @@ def db_connection_str(dbflavour, dbuser, dbpassword, dbhost, dbport, dbname):
                                          'passwd': pwd,
                                          'host': dbhost,
                                          'port_info': port_info,
-                                         'db_info': db_info}
+                                         'db_info': db_info,
+                                         'driver': driver}
     return(connection_str)
 
 
