@@ -3,13 +3,13 @@ This is where support for different batch job execution system in implemented.
 """
 try:
     import condor
-except ImportError:
+except:
     pass
 try:
     import makefile
-except ImportError:
+except:
     pass
 try:
     import xgrid
-except ImportError:
+except:
     pass
