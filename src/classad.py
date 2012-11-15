@@ -8,7 +8,7 @@ More information here: http://research.cs.wisc.edu/condor/classad/
 """
 import re
 
-
+import condorutils
 
 
 # Constants
@@ -20,6 +20,35 @@ MULTILINE_BUSTER = re.compile(' *\\\\ *\n *')
 
 
 # Helper functions.
+def parse_classad_environment(raw_value):
+    """
+    Given the raw value of the Environment CLassAd string, `raw_value`, parse it
+    and return its Python dictionary equivalent. We only suppotrt new-style
+    environment syntax (i.e. "key=val [key=val] ...").
+    """
+    env = {}
+
+    env_str = raw_value.strip()
+    if(env_str.startswith('"') and env_str.endswith('"')):
+        env_str = env_str[1:-1]
+
+    # Replace ' ' with a placeholder. We need to do that because the Condor
+    # Environment string is a space-separated list of key=value pairs all
+    # enclosed in double quotes. If value has a space in it, then the space has
+    # to be single-quoted. Since we split on spaces, we want to avoid splitting
+    # value strings and hence we replace "' '" with something else, split the
+    # whole Environment string to get the list of key=value pairs and then
+    # inside each value we put back that spaces (if needed).
+    env_str = env_str.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
+    tokens = env_str.split()
+    for token in tokens:
+        # If this fails is because we have screwed up badly and we need to know.
+        key, val = token.split('=', 1)
+        env[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
+    return(env)
+
+
+
 def _parse_classad_value(raw_value):
     """
     Parse a single ClassAd value and cast it to the appropriate Python type.
@@ -46,7 +75,7 @@ def _parse_classad_value(raw_value):
 
 
 
-def _parse(classad_text):
+def _parse(classad_text, fix_dagman_job_id=True):
     """
     Given a multi-line ClassAd text, parse it and return the corresponding
         {key: val}
@@ -86,6 +115,24 @@ def _parse(classad_text):
         if(res.has_key(key)):
             raise(NotImplementedError('ClassAd arrays are not supported.'))
         res[key] = val
+
+    # Remember that in Condor, ClusterIds start form 1, not 0. Also, if the
+    # classad has a DAGManJobId, we assume that its MyType == Job
+    dagman_job_id = res.get('DAGManJobId', None)
+    env_str = res.get('Environment', '')
+    # We can only fix DAGManJobId if we have CONDOR_PARENT_ID defined in the job
+    # classad environment string.
+    if(fix_dagman_job_id and dagman_job_id and env_str):
+        env = parse_classad_environment(env_str)
+        # parnt_id = submit_host:integer:timestamp
+        parent_id = env.get('CONDOR_PARENT_ID', '')
+        if(not parent_id):
+            msg = 'CONDOR_PARENT_ID not defined in ClassAd Environment string.'
+            raise(Exception(msg))
+
+        timestamp = parent_id.split(':')[-1]
+        (host, _, _) = condorutils.parse_globaljobid(res['GlobalJobId'])
+        res['DAGManJobId'] = '%s#%s.0#%s' % (host, dagman_job_id, timestamp)
     return(res)
 
 

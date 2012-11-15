@@ -100,8 +100,8 @@ column:
     LeaveJobInQueue = FALSE
     DAGNodeName = "PROC_MEF"
     DAGParentNodeNames = ""
-    DAGManJobId = 18
-    HookKeyword = "FOO"
+    DAGManJobId = "fedora13vm0.localdomain#18.0#1286911020"
+    HookKeyword = "OWL"
     Environment = ""
     Arguments = "-i /hstdev/project/condor_bcw/repository/raw/dataset_001/raw-000002.fits -o raw-000002_%(ccdId)s.fits"
     MyAddress = "<192.168.240.129:38226>"
@@ -228,7 +228,7 @@ class Blackboard(elixir.Entity):
     LeaveJobInQueue = elixir.Field(elixir.Boolean)
     DAGNodeName = elixir.Field(elixir.Unicode(255))
     DAGParentNodeNames = elixir.Field(elixir.Unicode(255))
-    DAGManJobId = elixir.Field(elixir.Integer)
+    DAGManJobId = elixir.Field(elixir.Unicode(255))
     HookKeyword = elixir.Field(elixir.Unicode(255))
     Environment = elixir.Field(elixir.UnicodeText())
     Arguments = elixir.Field(elixir.Unicode(255))

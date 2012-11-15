@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 import time
 
-from .classad import ClassAd
-from .utils import which
+import classad
+import utils
 
 
 
@@ -30,13 +30,13 @@ def _parse_classads(stdout):
     for line in stdout:
         if(line.strip() == '' and ad):
             # New ClassAd: parse the last one and start a new one.
-            ads.append(ClassAd.new_from_classad(ad))
+            ads.append(classad.ClassAd.new_from_classad(ad))
             ad = ''
             continue
         ad += line
     # The file ended and hence we must have a last ClassAd: parse it and quit.
     if(ad):
-        ads.append(ClassAd.new_from_classad(ad))
+        ads.append(classad.ClassAd.new_from_classad(ad))
     return(ads)
 
 
@@ -175,7 +175,7 @@ def _run_condor_cmd(argv, error_result, timeout=TIMEOUT):
     error.
     """
     ads = error_result
-    stdout = _run_and_get_stdout([which(argv.pop(0)), ] + argv, timeout)
+    stdout = _run_and_get_stdout([utils.which(argv.pop(0)), ] + argv, timeout)
     if(stdout is not None):
         f = open(stdout, 'r')
         ads = _parse_classads(f)
@@ -194,11 +194,11 @@ def condor_status(machine_name=None, timeout=TIMEOUT):
     Return
         [classad, ...]
     """
-    m = ClassAd(MyType='Machine',
+    m = classad.ClassAd(MyType='Machine',
                 Name='Error communicating with condor please try again later.')
     machines = [m, ]
 
-    args = [which('condor_status'), '-long']
+    args = [utils.which('condor_status'), '-long']
     if(machine_name):
         args.append(machine_name)
     return(_run_condor_cmd(args, machines, timeout=timeout))
@@ -208,9 +208,9 @@ def condor_stats(timeout=TIMEOUT):
     """
     Return the Condor Schedd stats as a ClassAd instance.
     """
-    ad = ClassAd(MyType='Scheduler',
+    ad = classad.ClassAd(MyType='Scheduler',
                  Name='Error communicating with the Condor Schedd.')
-    args = [which('condor_status'), '-long', '-schedd']
+    args = [utils.which('condor_status'), '-long', '-schedd']
     res = _run_condor_cmd(args, [ad, ], timeout=timeout)
     return(res[0])
 
@@ -251,7 +251,8 @@ def _run_condor_job_cmd(cmd, extra_argv=None, job_id=None, owner=None,
         return(255)
 
     # Invoke cmd.
-    return(_run([which(cmd)] + schedd_argv + extra_argv + [str(arg)], timeout))
+    return(_run([utils.which(cmd)] + schedd_argv + extra_argv + [str(arg)],
+                timeout))
 
 
 def condor_hold(job_id=None, owner=None, timeout=TIMEOUT):
@@ -327,12 +328,9 @@ def condor_getprio(job_id, timeout=TIMEOUT):
         [schedd, job_id, _] = parse_globaljobid(job_id)
         schedd_argv = ['-name', schedd]
 
-    stdout = _run_and_get_stdout([which('condor_q')] +
+    stdout = _run_and_get_stdout([utils.which('condor_q')] +
                                  schedd_argv +
-                                 ['-format',
-                                  '%d\n',
-                                  'JobPrio',
-                                  str(job_id)],
+                                 ['-format', '%d\n', 'JobPrio', str(job_id)],
                                  timeout)
     if(stdout is None):
         return
