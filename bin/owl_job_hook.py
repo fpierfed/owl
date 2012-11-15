@@ -28,31 +28,18 @@ def get_owl_environment(job_ad):
     corresponding Python {key: val} dictionary that we will then use to agument
     our environment.
     """
-    environment = {}
+    from owl import classad
 
     # Find the Environment = ... line.
     job_env_str = ''
     for line in job_ad.split('\n'):
         if(line.startswith('Environment = ')):
             job_env_str = line.split('Environment = ', 1)[1]
-            job_env_str = job_env_str.strip()
-            job_env_str = job_env_str[1:-1]
+            break
 
-    # Replace ' ' with a placeholder. We need to do that because the Condor
-    # Environment string is a space-separated list of key=value pairs all
-    # enclosed in double quotes. If value has a space in it, then the space has
-    # to be gingle-quoted. Since we split on spaces, we want to avoid splitting
-    # value strings and hence we replace "' '" with something else, split the
-    # whole Environment string to get the list of key=value pairs and then
-    # inside each value we put back that spaces (if needed).
-    job_env_str = job_env_str.replace("' '", 'OWL_CONDOR_SPACE_SPLACEHOLDER')
-    tokens = job_env_str.split()
-    for token in tokens:
-        # If this fails is because we have screwed up badly and we need to know.
-        key, val = token.split('=', 1)
-        if(key.startswith('OWL')):
-            environment[key] = val.replace('OWL_CONDOR_SPACE_SPLACEHOLDER', ' ')
-    return(environment)
+    return(dict([(k, v) for (k, v) \
+                 in classad.parse_classad_environment(job_env_str) \
+                 if k.startswith('OWL')]))
 
 
 
