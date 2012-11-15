@@ -57,6 +57,9 @@ class Workflow(object):
         # Extend/override the content of kwds with that of extrakwds.
         kwds.update(extrakwds)
 
+        # Extend/override the content of kwds with that of extra_env.
+        kwds.update(extra_env)
+
         # Create a temporary directory unless one was specified.
         if(not work_dir):
             work_dir = tempfile.mkdtemp()
