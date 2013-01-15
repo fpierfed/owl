@@ -29,8 +29,6 @@ def _extract_inouts(arg_string):
             out_args = args[i+1]
     return(in_args, out_args)
 
-
-
 def _parse(dag, directory):
     """
     A DAG syntax is pretty simple
@@ -75,7 +73,6 @@ def _parse(dag, directory):
             #         % (child.name, str([p.name for p in child.parents])))
     return(nodes.values())
 
-
 def _escape(arg_string):
     """
     Shell escape arguments.
@@ -85,6 +82,7 @@ def _escape(arg_string):
     """
     args = arg_string.strip().split()
     return(' '.join(["'" + s.replace("'", "'\\''") + "'" for s in args]))
+
 
 
 
@@ -121,6 +119,7 @@ class DAG(object):
 
     def __init__(self, nodes):
         self.nodes = nodes
+        self.roots = [n for n in nodes if not n.parents]
         return
 
 
