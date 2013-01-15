@@ -13,3 +13,7 @@ try:
     import xgrid
 except:
     pass
+try:
+    import spreader
+except:
+    pass
