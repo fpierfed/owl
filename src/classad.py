@@ -168,6 +168,11 @@ class ClassAd(object):
     def __init__(self, **kw):
         map(lambda (k, v): setattr(self, k, v), kw.items())
 
+        # When we are parsing a text file classad, MyType might not be defined.
+        # In those cases, we set it to Job.
+        if(not hasattr(self, 'MyType')):
+            self.MyType = 'Job'
+
         # Just to be consistent, if JobState is undefined or None, set it to
         # 'Starting'. Just do this if self.MyType is Job
         if(self.MyType == 'Job' and
