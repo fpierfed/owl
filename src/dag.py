@@ -99,6 +99,7 @@ class Node(object):
         classad = open(script).read()
 
         self.name = name
+        self.script = script
         self.job = Job.new_from_classad(classad)
         self.children = children
         self.parents = parents
