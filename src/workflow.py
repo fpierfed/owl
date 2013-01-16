@@ -117,7 +117,7 @@ class Workflow(object):
         if(extra_env):
             os.environ.update(extra_env)
 
-        plugin = getattr(plugins, flavour)
+        plugin = getattr(plugins, flavour + '_plugin')
 
         if(wait):
             return(plugin.submit(dag_name, work_dir, wait=True))
