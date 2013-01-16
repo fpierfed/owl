@@ -4,11 +4,12 @@ Define all Makefile-specific properties here.
 This is a bit of a hack... err... proof of concept, I mean ;-)
 """
 import collections
-import shutil
 import os
+import shutil
+import time
 
 from owl import dag
-import client
+from spreader import client
 
 
 
@@ -24,6 +25,7 @@ class DAG(dag.DAG):
         running = _enqueue(self.roots, work_dir)
 
         # Now wait. A node is done if and only if al its instances are done.
+        total_time = 0.
         while(running):
             instances = running.pop(0)
             not_done = [(p, n) for (p, n) in instances if not p.is_ready()]
