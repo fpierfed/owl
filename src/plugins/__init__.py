@@ -17,7 +17,7 @@ except:
     print('Warning: XGrid plugin disabled.')
     pass
 try:
-    import spreader_plugin
+    import spread_plugin
 except:
-    print('Warning: Spreader plugin disabled.')
+    print('Warning: Spread plugin disabled.')
     pass
