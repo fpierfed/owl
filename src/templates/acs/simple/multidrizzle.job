@@ -4,7 +4,7 @@
 {% set comma = joiner(",") %}
 {% set space = joiner(" ") %}
 
-Executable              = {{ code_root }}/acs_simple/bin/run_multidrizzle.py
+Executable              = {{ code_root }}/run_multidrizzle.py
 Arguments               = {{ dataset }}_asn.fits
 Output                  = multidrizzle_{{ dataset }}.out
 Error                   = multidrizzle_{{ dataset }}.err

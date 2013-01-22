@@ -3,7 +3,7 @@
 #
 {% set comma = joiner(",") %}
 
-Executable              = {{ code_root }}/acs_simple/bin/run_calacs.py
+Executable              = {{ code_root }}/run_calacs.py
 Arguments               = {{ dataset }}_asn.fits $(Process)
 Output                  = calacs_{{ dataset }}.out
 Error                   = calacs_{{ dataset }}.err

@@ -3,7 +3,7 @@
 #
 {% set comma = joiner(",") %}
 
-Executable              = {{ code_root }}/acs_simple/bin/run_setup.py
+Executable              = {{ code_root }}/run_setup.py
 Arguments               = {{ dataset }}
 Output                  = setup_{{ dataset }}.out
 Error                   = setup_{{ dataset }}.err
