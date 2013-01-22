@@ -14,7 +14,6 @@ from spread import client
 
 
 
-
 class DAG(dag.DAG):
     """
     This is a spread DAG. We assume that the comman-line argument do not have
@@ -52,6 +51,8 @@ def _copy_input_files(node, work_dir):
     if(hasattr(node.job, 'transfer_input_files')):
         paths = node.job.transfer_input_files.split(',')
         for path in paths:
+            if(os.path.dirname(path) in ('', '.')):
+                continue
             if(not os.path.exists(os.path.basename(path))):
                 shutil.copy(path, work_dir)
     return
@@ -67,9 +68,14 @@ def _enqueue(nodes, work_dir):
         for _id in range(node.job.Instances):
             node = _expand_vars(node, _id)
             _copy_input_files(node, work_dir)
+            job = node.job
             promise = client.async_call('system',
                                         _mkargv(node),
-                                        cwd=work_dir)
+                                        {'cwd': work_dir,
+                                         'getenv': job.GetEnv,
+                                         'environment': job.EnvironmentDict,
+                                         'timeout': None,
+                                         'root_dir': None})
             instances.append((promise, node))
         running.append(instances)
     return(running)

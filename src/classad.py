@@ -75,7 +75,7 @@ def _parse_classad_value(raw_value):
 
 
 
-def _parse(classad_text, fix_dagman_job_id=True):
+def _parse(classad_text):
     """
     Given a multi-line ClassAd text, parse it and return the corresponding
         {key: val}
@@ -115,24 +115,6 @@ def _parse(classad_text, fix_dagman_job_id=True):
         if(res.has_key(key)):
             raise(NotImplementedError('ClassAd arrays are not supported.'))
         res[key] = val
-
-    # Remember that in Condor, ClusterIds start form 1, not 0. Also, if the
-    # classad has a DAGManJobId, we assume that its MyType == Job
-    dagman_job_id = res.get('DAGManJobId', None)
-    env_str = res.get('Environment', '')
-    # We can only fix DAGManJobId if we have CONDOR_PARENT_ID defined in the job
-    # classad environment string.
-    if(fix_dagman_job_id and dagman_job_id and env_str):
-        env = parse_classad_environment(env_str)
-        # parnt_id = submit_host:integer:timestamp
-        parent_id = env.get('CONDOR_PARENT_ID', '')
-        if(not parent_id):
-            msg = 'CONDOR_PARENT_ID not defined in ClassAd Environment string.'
-            raise(Exception(msg))
-
-        timestamp = parent_id.split(':')[-1]
-        (host, _, _) = condorutils.parse_globaljobid(res['GlobalJobId'])
-        res['DAGManJobId'] = '%s#%s.0#%s' % (host, dagman_job_id, timestamp)
     return(res)
 
 
@@ -166,7 +148,47 @@ class ClassAd(object):
         return(j)
 
     def __init__(self, **kw):
+        """
+        Create a ClassAd object with a twist: since ClassAds are typically
+        created by parsing a (case insensitive) user-supplied text description,
+        we cannot expect them to follow any given case convention. For this
+        reason we create aliases for each instance variable and allow access to
+        be case-insensitive. This means that behind the scene, the lower-case
+        version of the instance variable is always used.
+        """
         map(lambda (k, v): setattr(self, k, v), kw.items())
+        self._raw_classad = None
+        return
+
+    def __getattr__(self, name):
+        if(name.islower()):
+            raise(AttributeError("'%s' object has no attribute '%s'" \
+                                 % (self.__class__.__name__, name)))
+        return(getattr(self, name.lower()))
+
+    def __setattr__(self, name, value):
+        return(super(ClassAd, self).__setattr__(name.lower(), value))
+
+    def __delattr__(self, name):
+        return(super(ClassAd, self).__delattr__(name.lower()))
+
+    def todict(self):
+        """
+        Convert to a simple dictionary.
+        """
+        return(self.__dict__)
+
+
+
+class Job(ClassAd):
+    """
+    ClassAd subclass describing a Job i.e. a ClassAd with a MyType == Job. This
+    involves making sure that some parameters/instance variables are present and
+    giving standard defaults to the ones that are not. For a complete set of
+    Job instance variables, see the man pages for condor_submit.
+    """
+    def __init__(self, **kw):
+        super(Job, self).__init__(**kw)
 
         # When we are parsing a text file classad, MyType might not be defined.
         # In those cases, we set it to Job.
@@ -179,22 +201,44 @@ class ClassAd(object):
            ('JobState' not in kw.keys() or not kw['JobState'])):
             self.JobState = unicode('Starting')
 
-        self._raw_classad = None
+        if(not hasattr(self, 'getenv')):
+            self.getenv = False
+
+        # Fix environment and add convenience environmentdict.
+        if(not hasattr(self, 'environment')):
+            self.environment = ''
+        self.environmentdict = parse_classad_environment(self.environment)
+
+        self._fix_dagman_job_id()
         return
 
-    def todict(self):
+
+    def _fix_dagman_job_id(self):
         """
-        Convert to a simple dictionary.
+        DAGManJobId is simply the parent DAGMan ClusterId, we would like to have
+        it be a full GlobalJobId and here we try to infer the missing pieces of
+        information (namely the hostname and submission timestamp) from the job
+        classad.
         """
-        return(self.__dict__)
+        # Remember that in Condor, ClusterIds start form 1, not 0. Also, if the
+        # classad has a DAGManJobId, we assume that its MyType == Job
+        dagman_job_id = getattr(self, 'DAGManJobId', None)
+
+        # We can only fix DAGManJobId if we have CONDOR_PARENT_ID defined in the
+        # job classad environment string.
+        if(dagman_job_id and self.environmentdict):
+            # parnt_id = submit_host:integer:timestamp
+            parent_id = self.environmentdict.get('CONDOR_PARENT_ID', '')
+            if(not parent_id):
+                msg = 'CONDOR_PARENT_ID not defined in Job Environment string.'
+                raise(Exception(msg))
+
+            timestamp = parent_id.split(':')[-1]
+            (host, _, _) = condorutils.parse_globaljobid(self['GlobalJobId'])
+            self.DAGManJobId = '%s#%s.0#%s' % (host, dagman_job_id, timestamp)
+        return
 
 
-
-class Job(ClassAd):
-    """
-    Alias for ClassAd.
-    """
-    pass
 
 
 
