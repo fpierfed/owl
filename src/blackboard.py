@@ -120,6 +120,7 @@ column:
 import datetime
 import elixir
 from sqlalchemy import desc, asc
+from sqlalchemy import func
 
 from classad import Job
 from config import DATABASE_CONNECTION_STR
@@ -260,6 +261,13 @@ class Blackboard(elixir.Entity):
 
 
 
+def _get_job_attrs_for_db(job):
+    mapping = dict([(k.lower(), k) for k in Blackboard.__dict__.keys() \
+                    if k[0].isupper()])
+    attrs = dict([(mapping[k], v) for (k, v) in job.__dict__.items() \
+                  if k in mapping.keys()])
+    return(attrs)
+
 
 def _extractDatasetName(job):
     """
@@ -293,7 +301,6 @@ def _convertTimeStamps(job):
     return
 
 
-
 def createEntry(job):
     """
     Insert the corresponding Blackboard entry in the database. Derive the
@@ -307,9 +314,10 @@ def createEntry(job):
     # Fix timestamps and dataset name.
     _convertTimeStamps(job)
     job.Dataset = _extractDatasetName(job)
-    attrs = job.__dict__
+    attrs = _get_job_attrs_for_db(job)
 
     entry = Blackboard(**attrs)
+
     elixir.session.commit()
     return
 
@@ -331,17 +339,17 @@ def updateEntry(job):
     # should not update entry.Instances.
     entry = Blackboard.query.filter_by(GlobalJobId=job.GlobalJobId).one()
     modified = 0
-    for attr in job.__dict__.keys():
-        if(attr == "Instances"):
+
+    attrs = _get_job_attrs_for_db(job)
+    for key in attrs.keys():
+        if(key == "Instances"):
             # Never update Instances.
             continue
 
-        if(not hasattr(entry, attr)):
-            # Not in our data model: move on.
-            continue
-
-        if(getattr(job, attr) != getattr(entry, attr)):
-            setattr(entry, attr, getattr(job, attr))
+        # _get_job_attrs_for_db garantees that we are only seeing attributes
+        # which are in the table definition.
+        if(attrs[key] != getattr(entry, key)):
+            setattr(entry, key, attrs[key])
             modified += 1
     if(modified):
         elixir.session.commit()
@@ -461,6 +469,17 @@ def getOSFEntry(dagManJobId):
                 entries[0].DAGManJobId,
                 entries)
     return(osfEntry)
+
+def getMaxClusterId():
+    # Define the database connection.
+    elixir.metadata.bind = DATABASE_CONNECTION_STR
+    elixir.metadata.bind.echo = False
+    elixir.setup_all()
+
+    entry = elixir.session.query(func.max(Blackboard.ClusterId)).one()
+    if(entry and len(entry) == 1 and entry[0] is not None):
+        return(entry[0])
+    return(0)
 
 
 

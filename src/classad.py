@@ -234,7 +234,7 @@ class Job(ClassAd):
                 raise(Exception(msg))
 
             timestamp = parent_id.split(':')[-1]
-            (host, _, _) = condorutils.parse_globaljobid(self['GlobalJobId'])
+            (host, _, _) = condorutils.parse_globaljobid(self.GlobalJobId)
             self.DAGManJobId = '%s#%s.0#%s' % (host, dagman_job_id, timestamp)
         return
 

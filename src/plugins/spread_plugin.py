@@ -6,10 +6,19 @@ This is a bit of a hack... err... proof of concept, I mean ;-)
 import collections
 import os
 import shutil
+import socket
 import time
 
 from owl import dag
+from owl import blackboard
 from spread import client
+
+
+
+# Constants
+# TODO: infer these fron the condor/owl config
+JOB_HOOK = '/usr/local/owl-dev/bin/owl_job_hook.py'
+HOSTNAME = socket.gethostname()
 
 
 
@@ -47,6 +56,10 @@ class DAG(dag.DAG):
 
 
 
+def get_clusterid():
+    return(blackboard.getMaxClusterId())
+
+
 def _copy_input_files(node, work_dir):
     if(hasattr(node.job, 'transfer_input_files')):
         paths = node.job.transfer_input_files.split(',')
@@ -58,30 +71,44 @@ def _copy_input_files(node, work_dir):
     return
 
 
-def _enqueue(nodes, work_dir):
+def _enqueue(nodes, work_dir, job_hook=JOB_HOOK, hostname=HOSTNAME):
     """
     Submit the given nodes to the active spread installation.
     """
     running = []
     for node in nodes:
         instances = []
+        clusterid = get_clusterid()
+        t = int(time.time())
+
         for _id in range(node.job.Instances):
             node = _expand_vars(node, _id)
             _copy_input_files(node, work_dir)
             job = node.job
+            jobid = '%s#%d.%d#%d' % (hostname, clusterid, _id, t)
+            job._raw_classad += 'GlobalJobId = "%s"' % (jobid)
+
+            # Job hooks.
+            if(not hasattr(job, 'HookKeyword')):
+                job_hook = None
+
             promise = client.async_call('system',
                                         _mkargv(node),
                                         {'cwd': work_dir,
                                          'getenv': job.GetEnv,
                                          'environment': job.EnvironmentDict,
                                          'timeout': None,
-                                         'root_dir': None})
+                                         'root_dir': None,
+                                         'pre_proc': job_hook,
+                                         'post_proc': job_hook,
+                                         'classad': job._raw_classad})
             instances.append((promise, node))
         running.append(instances)
     return(running)
 
 
 def _expand_vars(node, instance_id):
+    # TODO: Support $(Cluester) as well.
     mapping = {'$(Process)': str(instance_id)}
 
     new_node = _copynode(node)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/owl-dev/bin/python
 """
 This is a single-entry OWL blackboard management Condor Job Hook.
 
@@ -38,7 +38,7 @@ def get_owl_environment(job_ad):
             break
 
     return(dict([(k, v) for (k, v) \
-                 in classad.parse_classad_environment(job_env_str) \
+                 in classad.parse_classad_environment(job_env_str).items() \
                  if k.startswith('OWL')]))
 
 
@@ -53,7 +53,7 @@ def setup_logger(name):
         if(os.environ.has_key(key)):
             tmp_path = os.environ[key]
             break
-
+    tmp_path = '/tmp'
     log_name = name + '-' + os.environ.get('USER', 'UNKNOWN') + '.log'
     LOG_FILE_NAME = os.path.join(tmp_path, log_name)
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
