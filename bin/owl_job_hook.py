@@ -17,6 +17,7 @@ import datetime
 import logging
 import os
 import sys
+import time
 
 
 
@@ -123,7 +124,7 @@ def close_blackboard_entry(job_ad, logger=None):
 
     # Make sure that the job CompletionDate is not 0 (as it seems to be all the
     # time).
-    if(job.CompletionDate == 0):
+    if(not hasattr(job, 'CompletionDate') or job.CompletionDate == 0):
         job.CompletionDate = job.JobStartDate + job.JobDuration
         if(logger):
             logger.debug('CompletionDate = 0 in an exit hook: setting it to %d'
@@ -192,9 +193,17 @@ if(__name__ == '__main__'):
 
     # What are you waiting for?
     logger.debug('Upodating the blackboard.')
-    try:
-        fn(classad, logger)
-    except:
+    retries = 5
+    ok = False
+    while(retries):
+        try:
+            fn(classad, logger)
+            ok = True
+        except:
+            retries -= 1
+            time.sleep(.1)
+
+    if(not ok)
         logger.exception('Error updating the database.')
     else:
         logger.debug('Update done.')
