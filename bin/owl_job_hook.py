@@ -203,7 +203,7 @@ if(__name__ == '__main__'):
             retries -= 1
             time.sleep(.1)
 
-    if(not ok)
+    if(not ok):
         logger.exception('Error updating the database.')
     else:
         logger.debug('Update done.')
