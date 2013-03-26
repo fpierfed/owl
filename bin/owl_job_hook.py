@@ -193,14 +193,16 @@ if(__name__ == '__main__'):
 
     # What are you waiting for?
     logger.debug('Upodating the blackboard.')
-    retries = 5
     ok = False
-    while(retries):
+    retries = 5
+    while(retries > 0 and not ok):
         try:
             fn(classad, logger)
             ok = True
         except:
             retries -= 1
+            logger.debug('Update failed: trying again (%d times to go).' \
+                         % (retries))
             time.sleep(.1)
 
     if(not ok):
