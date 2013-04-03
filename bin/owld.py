@@ -44,7 +44,7 @@ from owl import blackboard
 # Constants
 OWLD_METHOD_PREFIX = 'owlapi_'
 HEARTBEAT_TIMEOUT = 10
-LOG_NAME = 'owld.log'
+LOG_NAME = 'owlddev.log'
 
 
 
@@ -614,6 +614,29 @@ class Daemon(object):
 
         return(condor.condor_getprio(job_id, timeout=timeout))
 
+    def owlapi_workflow_resubmit(self, workflow_id, timeout=condor.TIMEOUT):
+        """
+        Given the `workflow_id` of a previously failed workflow, connect to the
+        appropriate local OWLD and ask it to re-submit that wrkflow.
+
+        IMPORTANT
+        At the moment, no check is performed onto whether or not that workflow
+        had indeed failed. Condor will not allow a currently running/queued
+        workflow to be restarted.
+
+        Usage
+            workflow_resubmit(workflow_id)
+
+        Return
+            0 in case of success
+            N>0 in case of error.
+        """
+        err = 0
+
+
+
+        return(err)
+
 
 
 def new_command_id(queue):
@@ -707,7 +730,7 @@ if(__name__ == '__main__'):
             max_rows = None
 
     # Where are we supposed to write logs and which logging level should we use?
-    log_file_name = os.path.join(config.LOGGING_LOG_DIR, LOG_NAME)
+    log_file_name = os.path.join(config.LOGGING_LOG_DIR, config.OWLD_LOG_NAME)
     verbosity = config.LOGGING_LOG_LEVEL
     logger = utils.get_logger(file_name=log_file_name,
                               verbosity=config.LOGGING_LOG_LEVEL)
