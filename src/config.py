@@ -57,7 +57,8 @@ from utils import db_connection_str
 # Define the default values for misssing configuration parameters. The format is
 # {section_name: {key: value}}
 DEFAULTS = {'DATABASE': {'port': -1, 'driver': None},
-            'OWLD': {'max_msg_bytes': None, 'max_rows': None},
+            'OWLD': {'max_msg_bytes': None, 'max_rows': None,
+                     'log_name': 'owld.log'},
             'LOGGING': {'log_dir': '/var/log', 'log_level': 'DEBUG'}}
 
 config = None
