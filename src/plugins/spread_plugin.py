@@ -11,15 +11,16 @@ import time
 
 from owl import dag
 from owl import blackboard
+from owl.utils import which
 from spread import client
+from spread_keyclient import get_clusterid
 
 
 
 # Constants
 # TODO: infer these fron the condor/owl config
-JOB_HOOK = '/usr/local/owl-dev/bin/owl_job_hook.py'
+JOB_HOOK = os.path.join(os.path.dirname(which('owld.py')), 'owl_job_hook.py')
 HOSTNAME = socket.gethostname()
-
 
 
 
@@ -55,11 +56,6 @@ class DAG(dag.DAG):
 
 
 
-
-def get_clusterid():
-    return(blackboard.getMaxClusterId())
-
-
 def _copy_input_files(node, work_dir):
     if(hasattr(node.job, 'transfer_input_files')):
         paths = node.job.transfer_input_files.split(',')
@@ -78,25 +74,38 @@ def _enqueue(nodes, work_dir, job_hook=JOB_HOOK, hostname=HOSTNAME):
     running = []
     for node in nodes:
         instances = []
-        clusterid = get_clusterid()
         t = int(time.time())
 
         for _id in range(node.job.Instances):
             node = _expand_vars(node, _id)
             _copy_input_files(node, work_dir)
             job = node.job
-            jobid = '%s#%d.%d#%d' % (hostname, clusterid, _id, t)
-            job._raw_classad += 'GlobalJobId = "%s"' % (jobid)
+            job.ClusterId = get_clusterid()
+            job.ProcId = _id
+            job.GlobalJobId = '%s#%d.%d#%d' % (hostname, job.ClusterId, _id, t)
+            if(not job._raw_classad.endswith('\n')):
+                job._raw_classad += '\n'
+            job._raw_classad += 'GlobalJobId = "%s"\n' % (job.ClusterId)
+
 
             # Job hooks.
             if(not hasattr(job, 'HookKeyword')):
                 job_hook = None
+            if(not hasattr(job, 'Input')):
+                job.Input = None
+            if(not hasattr(job, 'Output')):
+                job.Output = None
+            if(not hasattr(job, 'Error')):
+                job.Error = None
 
             promise = client.async_call('system',
                                         _mkargv(node),
                                         {'cwd': work_dir,
                                          'getenv': job.GetEnv,
                                          'environment': job.EnvironmentDict,
+                                         'output': job.Output,
+                                         'error': job.Error,
+                                         'input': job.Input,
                                          'timeout': None,
                                          'root_dir': None,
                                          'pre_proc': job_hook,
@@ -115,10 +124,19 @@ def _expand_vars(node, instance_id):
     for key in new_node.job.__dict__.keys():
         for var in mapping.keys():
             value = getattr(new_node.job, key)
+
+            # Simple strings or unicode.
             if(isinstance(value, basestring) and var in value):
                 setattr(new_node.job, key, value.replace(var, mapping[var]))
-            elif(isinstance(value, collections.Iterable)):
+            # Lists and tuples.
+            elif(isinstance(value, collections.Sequence)):
                 for i in range(len(value)):
+                    if(isinstance(value[i], basestring) and var in value):
+                        value[i] = value[i].replace(var, mapping[var])
+                setattr(new_node.job, key, value)
+            # And now: dictionaries!
+            elif(isinstance(value, collections.Mapping)):
+                for i in value:
                     if(isinstance(value[i], basestring) and var in value):
                         value[i] = value[i].replace(var, mapping[var])
                 setattr(new_node.job, key, value)
