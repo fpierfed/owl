@@ -154,12 +154,12 @@ dataset = 'GrepRun%d' % (int(now))
 
 # Create an instrument/mode Workflow instance (dataset independent)...
 W = workflow_factory(pattern, int(math.ceil(float(n) / float(N))), N)
-wflow = W(templateRoot=TEMPLATE_ROOT)
+wflow = W(template_root=TEMPLATE_ROOT)
 # ... and submit it to the grid (for this particular piece of data).
-_id = wflow.execute(codeRoot=CODE_ROOT,
+_id = wflow.execute(code_root=CODE_ROOT,
                     repository=REPOSITORY,
                     dataset=dataset,
-                    workDir=workDir)
+                    work_dir=workDir)
 print('Dataset %s submitted as workflow %s' % (dataset, _id))
 }}}
 
@@ -211,10 +211,10 @@ transcended the narrow confines of his life as a man of the world. He had hardly
 Keep in mind that synchronous workflow `execute` method calls are only supported under Condor at the moment and are enabled by simply adding `wait=True` to the `execute` method argument list. Also important to notice is that the return type of the synchronous call is a tuple of a string (the workflow ID) and an integer (its exit code) whereas the return type of the default asynchronous call (`wait=False` being the default) is a simple string (the workflow ID):
 {{{
 # ... and submit it to the grid (for this particular piece of data).
-_id, err = wflow.execute(codeRoot=CODE_ROOT,
+_id, err = wflow.execute(code_root=CODE_ROOT,
                          repository=REPOSITORY,
                          dataset=dataset,
-                         workDir=workDir,
+                         work_dir=workDir,
                          wait=True)
 # print('Dataset %s submitted as workflow %s' % (dataset, _id))
 # print('Exit status: %d' % (err))
