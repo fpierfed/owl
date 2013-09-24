@@ -12,7 +12,7 @@ from owl import workflow
 
 def workflow_factory(pattern, num_chunks, num_lines):
     class MyWorkflow(workflow.Workflow):
-        def getExtraKeywords(self, *args):
+        def get_extra_keywords(self, *args):
             return({'word': pattern, 
                     'n': int(num_chunks), 
                     'lines': int(num_lines)})
@@ -61,12 +61,12 @@ dataset = 'GrepRun%d' % (int(now))
 
 # Create a instrument/mode Workflow instance (dataset independent)...
 W = workflow_factory(pattern, int(math.ceil(float(n) / float(N))), N)
-wflow = W(templateRoot=TEMPLATE_ROOT)
+wflow = W(template_root=TEMPLATE_ROOT)
 # ... and submit it to the grid (for this particular piece of data).
-_id, err = wflow.execute(codeRoot=CODE_ROOT, 
+_id, err = wflow.execute(code_root=CODE_ROOT, 
                          repository=REPOSITORY, 
                          dataset=dataset, 
-                         workDir=workDir,
+                         work_dir=workDir,
                          wait=True)
 # print('Dataset %s submitted as workflow %s' % (dataset, _id))
 # print('Exit status: %d' % (err))
